@@ -147,6 +147,97 @@
   .real-input:focus{ outline:none; border-color:var(--fuchsia); }
   .real-input::placeholder{ color:var(--muted-2); }
 
+  /* ---------- Registro de facturacion ---------- */
+  .real-cell{ display:flex; align-items:center; justify-content:flex-end; gap:8px; }
+  .real-input.dirty{ border-color:var(--fuchsia); background:rgba(230,0,126,0.08); }
+
+  .log-btn{
+    flex-shrink:0;
+    width:30px; height:30px; padding:0;
+    display:inline-flex; align-items:center; justify-content:center;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:var(--surface-2);
+    color:var(--muted-2);
+    cursor:pointer;
+    transition:background .15s ease, border-color .15s ease, color .15s ease, transform .1s ease;
+  }
+  .log-btn svg{ width:15px; height:15px; display:block; }
+  .log-btn:disabled{ cursor:default; opacity:.4; }
+  .log-btn.ready{
+    border-color:var(--fuchsia); background:var(--fuchsia);
+    color:#0b0b0c; opacity:1; cursor:pointer;
+  }
+  .log-btn.ready:hover{ transform:scale(1.07); }
+  .log-btn.done{
+    border-color:var(--gold); background:transparent; color:var(--gold); opacity:1;
+  }
+
+  .reg-tag{
+    display:block; margin-top:5px;
+    font-family:'Inter',sans-serif; font-size:10.5px; letter-spacing:.2px;
+    color:var(--muted-2); text-align:right; white-space:nowrap;
+  }
+  .reg-tag.pending{ color:var(--fuchsia); }
+
+  .th-hint{
+    display:block; margin-top:3px;
+    font-weight:400; font-size:10.5px; color:var(--muted-2);
+    letter-spacing:0; text-transform:none;
+  }
+
+  @keyframes flash-ok{
+    0%{ background:rgba(255,212,0,.20); }
+    100%{ background:transparent; }
+  }
+  tbody tr.just-saved td{ animation:flash-ok .75s ease; }
+
+  /* ---------- Pantalla de acceso ---------- */
+  body.locked > .wrap{ display:none; }
+  #gate{
+    position:fixed; inset:0; z-index:100;
+    background:var(--bg);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:36px; padding:24px;
+  }
+  #gate.hidden{ display:none; }
+  .gate-title{
+    font-family:'Oswald',sans-serif; font-weight:700;
+    font-size:clamp(28px,7.5vw,70px);
+    letter-spacing:.06em; line-height:1.05;
+    text-align:center; margin:0; color:var(--text);
+  }
+  .gate-title em{ font-style:normal; color:var(--fuchsia); }
+  .gate-form{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
+  .gate-input{
+    width:min(66vw,250px);
+    background:var(--surface); border:1px solid var(--line);
+    color:var(--text); font-family:'Space Mono',monospace; font-size:15px;
+    padding:13px 16px; border-radius:10px; text-align:center; letter-spacing:.18em;
+    transition:border-color .15s ease;
+  }
+  .gate-input:focus{ outline:none; border-color:var(--fuchsia); }
+  .gate-input::placeholder{ color:var(--muted-2); letter-spacing:.1em; }
+  .gate-btn{
+    background:var(--fuchsia); border:none; color:#0b0b0c;
+    font-family:'Oswald',sans-serif; font-weight:600; font-size:15px; letter-spacing:.04em;
+    padding:13px 24px; border-radius:10px; cursor:pointer;
+  }
+  .gate-btn:hover{ background:var(--gold); }
+  .gate-error{
+    min-height:18px; margin:0;
+    font-size:12.5px; color:var(--fuchsia); text-align:center;
+  }
+  #gate.shake .gate-form{ animation:shake .4s ease; }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    20%{ transform:translateX(-8px); }
+    40%{ transform:translateX(8px); }
+    60%{ transform:translateX(-5px); }
+    80%{ transform:translateX(5px); }
+  }
+
   .diff.pos{ color:var(--gold); }
   .diff.neg{ color:var(--muted); }
 
@@ -233,7 +324,18 @@
   }
 </style>
 </head>
-<body>
+<body class="locked">
+
+<div id="gate">
+  <h1 class="gate-title">CAMPUS <em>PADEL</em> CLUB</h1>
+  <form class="gate-form" id="gate-form" autocomplete="off">
+    <input type="password" class="gate-input" id="gate-input"
+           placeholder="Contraseña" aria-label="Contraseña" autocomplete="current-password">
+    <button type="submit" class="gate-btn">Entrar</button>
+  </form>
+  <p class="gate-error" id="gate-error" role="alert"></p>
+</div>
+
 <div class="wrap">
 
   <header>
@@ -282,7 +384,7 @@
         <tr>
           <th>Mes</th>
           <th class="num">Objetivo</th>
-          <th class="num">Facturación real</th>
+          <th class="num">Facturación real<span class="th-hint">escribe y pulsa ✓ para registrar</span></th>
           <th class="num">Diferencia</th>
           <th class="num">Comisión</th>
           <th style="width:110px;">Progreso</th>
@@ -302,9 +404,74 @@
     </table>
   </div>
 
-  <button class="reset-btn" id="reset-btn" type="button">Restablecer facturación introducida</button>
+  <button class="reset-btn" id="reset-btn" type="button">Restablecer facturación registrada</button>
 
 </div>
+
+<script>
+/* ---------- Pantalla de acceso ----------
+   La contraseña no se guarda en claro: se compara su hash SHA-256.
+   Para cambiarla, genera el nuevo hash con:
+       printf '%s' 'TU_NUEVA_CLAVE' | shasum -a 256
+   y sustituye el valor de PASS_HASH.
+   Aviso: esto es una barrera de cliente. Disuade accesos casuales,
+   pero no protege frente a quien mire el código fuente de la página.
+------------------------------------------ */
+(function(){
+  const PASS_HASH = '612e37902026b843c04ab4cab79b00afa6dd1c1151f3b33d71d4aa7d32e2c74a';
+  const SESSION_KEY = 'pts_gate_ok_v1';
+
+  const gate  = document.getElementById('gate');
+  const form  = document.getElementById('gate-form');
+  const input = document.getElementById('gate-input');
+  const errEl = document.getElementById('gate-error');
+
+  function unlock(){
+    gate.classList.add('hidden');
+    document.body.classList.remove('locked');
+    try{ sessionStorage.setItem(SESSION_KEY, '1'); }catch(e){ /* sin almacenamiento */ }
+  }
+
+  // Ya validado en esta pestaña: no volver a pedirla.
+  let already = false;
+  try{ already = sessionStorage.getItem(SESSION_KEY) === '1'; }catch(e){}
+  if(already){ unlock(); }
+
+  async function sha256(str){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const val = input.value;
+    if(!val) return;
+
+    let hash;
+    try{
+      hash = await sha256(val);
+    }catch(err){
+      // crypto.subtle solo existe en contexto seguro (https o localhost)
+      errEl.textContent = 'No se puede verificar aquí. Abre la página por https.';
+      return;
+    }
+
+    if(hash === PASS_HASH){
+      errEl.textContent = '';
+      unlock();
+    }else{
+      errEl.textContent = 'Contraseña incorrecta';
+      input.value = '';
+      input.focus();
+      gate.classList.remove('shake');
+      void gate.offsetWidth; // reinicia la animacion
+      gate.classList.add('shake');
+    }
+  });
+
+  if(!already) input.focus();
+})();
+</script>
 
 <script>
 (function(){
@@ -323,17 +490,36 @@
     {key:'ago27', name:'Agosto',     year:'2027', target:7331.75},
   ];
   const STORAGE_KEY = 'pts_objetivos_2026_2027_v1';
+  const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>';
   const ANNUAL_BONUS = 1000;
 
   const fmt = (n) => n.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
   const fmtInt = (n) => n.toLocaleString('es-ES', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' €';
 
+  // Formato en almacenamiento: { clave: {v:'1234.5', ts:1700000000000} }
+  // Se acepta el formato antiguo (valor suelto) y se migra al vuelo.
+  function normalize(raw){
+    const out = {};
+    Object.keys(raw || {}).forEach(k=>{
+      const v = raw[k];
+      if(v && typeof v === 'object'){
+        if(v.v !== undefined && v.v !== '') out[k] = {v:String(v.v), ts:v.ts || null};
+      }else if(v !== '' && v !== null && v !== undefined){
+        out[k] = {v:String(v), ts:null};
+      }
+    });
+    return out;
+  }
+
   function loadData(){
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
+      return normalize(raw ? JSON.parse(raw) : {});
     }catch(e){ return {}; }
   }
+
+  const getVal = (key) => data[key] ? data[key].v : '';
+  const getTs  = (key) => data[key] ? data[key].ts : null;
   function saveData(data){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
     catch(e){ /* almacenamiento no disponible: se continua sin persistir */ }
@@ -375,8 +561,15 @@
         </td>
         <td class="num">${fmt(m.target)}</td>
         <td class="num">
-          <input type="number" min="0" step="0.01" class="real-input" data-key="${m.key}"
-                 placeholder="0,00" value="${data[m.key] ?? ''}">
+          <div class="real-cell">
+            <input type="number" min="0" step="0.01" class="real-input" data-key="${m.key}"
+                   placeholder="0,00" value="${getVal(m.key)}"
+                   aria-label="Facturación real de ${m.name}">
+            <button type="button" class="log-btn" data-key="${m.key}" id="btn-${m.key}"
+                    title="Registrar facturación de ${m.name}"
+                    aria-label="Registrar facturación de ${m.name}">${ICON_CHECK}</button>
+          </div>
+          <span class="reg-tag" id="tag-${m.key}"></span>
         </td>
         <td class="num diff" id="diff-${m.key}">—</td>
         <td class="num comm-cell zero" id="comm-${m.key}">—</td>
@@ -393,7 +586,7 @@
     let sumTarget=0, sumActual=0, sumCommission=0, hits=0;
 
     MONTHS.forEach(m=>{
-      const actual = parseFloat(data[m.key]) || 0;
+      const actual = parseFloat(getVal(m.key)) || 0;
       sumTarget += m.target;
       sumActual += actual;
       const diff = actual - m.target;
@@ -438,29 +631,104 @@
       : 'mensual acumulada (+1.000 € si se cumple el año)';
   }
 
+  function fmtDate(ts){
+    if(!ts) return '';
+    return new Date(ts).toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit', year:'2-digit'});
+  }
+
+  // Pinta el estado de una celda: sin registrar / pendiente de registrar / registrado.
+  function refreshCell(key){
+    const input = tbody.querySelector(`input[data-key="${key}"]`);
+    const btn = document.getElementById('btn-' + key);
+    const tag = document.getElementById('tag-' + key);
+    if(!input || !btn || !tag) return;
+
+    const typed = input.value.trim();
+    const stored = getVal(key);
+
+    if(typed === stored){
+      input.classList.remove('dirty');
+      btn.disabled = true;
+      if(stored === ''){
+        btn.className = 'log-btn';
+        tag.className = 'reg-tag';
+        tag.textContent = 'sin registrar';
+      }else{
+        btn.className = 'log-btn done';
+        const ts = getTs(key);
+        tag.className = 'reg-tag';
+        tag.textContent = ts ? 'registrado ' + fmtDate(ts) : 'registrado';
+      }
+    }else{
+      input.classList.add('dirty');
+      btn.disabled = false;
+      btn.className = 'log-btn ready';
+      tag.className = 'reg-tag pending';
+      tag.textContent = typed === '' ? 'pulsa ✓ para borrar' : 'pulsa ✓ para registrar';
+    }
+  }
+
+  function refreshAllCells(){ MONTHS.forEach(m=>refreshCell(m.key)); }
+
+  // Unico punto donde se escribe en el almacenamiento.
+  function register(key){
+    const input = tbody.querySelector(`input[data-key="${key}"]`);
+    if(!input) return;
+    const typed = input.value.trim();
+
+    if(typed === ''){
+      delete data[key];
+    }else{
+      const num = parseFloat(typed);
+      if(isNaN(num) || num < 0){ input.focus(); input.select(); return; }
+      data[key] = {v:String(num), ts:Date.now()};
+      input.value = String(num);
+    }
+
+    saveData(data);
+    refreshCell(key);
+    recalc();
+
+    const tr = input.closest('tr');
+    if(tr){
+      tr.classList.remove('just-saved');
+      void tr.offsetWidth; // reinicia la animacion
+      tr.classList.add('just-saved');
+    }
+  }
+
+  // Escribir ya no guarda: solo marca la celda como pendiente.
   tbody.addEventListener('input', (e)=>{
-    if(e.target.classList.contains('real-input')){
-      const key = e.target.dataset.key;
-      const val = e.target.value;
-      if(val === ''){ delete data[key]; } else { data[key] = val; }
-      saveData(data);
-      recalc();
+    if(e.target.classList.contains('real-input')) refreshCell(e.target.dataset.key);
+  });
+
+  tbody.addEventListener('keydown', (e)=>{
+    if(e.target.classList.contains('real-input') && e.key === 'Enter'){
+      e.preventDefault();
+      register(e.target.dataset.key);
     }
   });
 
+  tbody.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.log-btn');
+    if(btn && !btn.disabled) register(btn.dataset.key);
+  });
+
   document.getElementById('reset-btn').addEventListener('click', ()=>{
-    if(confirm('¿Borrar toda la facturación real introducida? Los objetivos no se modifican.')){
+    if(confirm('¿Borrar toda la facturación real registrada? Los objetivos no se modifican.')){
       data = {};
       saveData(data);
       MONTHS.forEach(m=>{
         const input = tbody.querySelector(`input[data-key="${m.key}"]`);
         if(input) input.value = '';
       });
+      refreshAllCells();
       recalc();
     }
   });
 
   buildTable();
+  refreshAllCells();
   recalc();
 })();
 </script>
