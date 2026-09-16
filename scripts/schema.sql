@@ -78,15 +78,22 @@ CREATE TABLE IF NOT EXISTS sync_log (
 -- del club: el origen no es un binario manager/marketplace.
 --   MANAGER, PLAYTOMIC_MANAGER -> la crea el club (mostrador, telefono)
 --   APP_IOS, APP_ANDROID, WEB_* -> la crea el jugador desde Playtomic
-CREATE OR REPLACE VIEW monthly_revenue AS
+DROP VIEW IF EXISTS monthly_revenue;
+
+CREATE VIEW monthly_revenue AS
 SELECT
   -- La zona se fija explicitamente: si no, el mes dependeria del
   -- TimeZone de la conexion y una reserva de las 00:30 podria caer
   -- en el mes anterior.
   date_trunc('month', start_at AT TIME ZONE 'Europe/Madrid')::date AS month,
   SUM(price_amount)                                           AS total,
-  SUM(price_amount) FILTER (WHERE origin IN ('MANAGER','PLAYTOMIC_MANAGER'))     AS directa,
-  SUM(price_amount) FILTER (WHERE origin NOT IN ('MANAGER','PLAYTOMIC_MANAGER')) AS marketplace,
+  -- Tres grupos, no dos. Las importadas no son ni manuales ni del
+  -- cliente: venian de otro sistema y meterlas en marketplace inflaba
+  -- ese canal con reservas que nadie hizo desde la app.
+  SUM(price_amount) FILTER (WHERE origin IN ('MANAGER','PLAYTOMIC_MANAGER'))  AS directa,
+  SUM(price_amount) FILTER (WHERE origin IN ('APP_IOS','APP_ANDROID','WEB_MOBILE','WEB_DESKTOP')) AS marketplace,
+  SUM(price_amount) FILTER (WHERE origin NOT IN ('MANAGER','PLAYTOMIC_MANAGER',
+    'APP_IOS','APP_ANDROID','WEB_MOBILE','WEB_DESKTOP'))                      AS importada,
   COUNT(*)                                                    AS reservas,
   COUNT(DISTINCT owner_id)                                    AS jugadores,
   -- Cobrado de verdad frente a lo solo comprometido.
@@ -172,3 +179,69 @@ CREATE TABLE IF NOT EXISTS auth_log (
   at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_auth_log_at ON auth_log (at DESC);
+
+-- ---------------------------------------------------------------
+-- Cobros: comisiones de Playtomic y venta de extras
+-- Fuente: /api/v1/payments (endpoint asincrono, hay que activarlo)
+-- ---------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS payments (
+  club_payment_id  TEXT PRIMARY KEY,
+  payment_id       TEXT,
+  refund_id        TEXT,
+  status           TEXT,             -- PAID, REFUNDED...
+  payment_date     TIMESTAMPTZ,
+  service_date     TIMESTAMPTZ,
+  metodo           TEXT,             -- ONSITE, APPLE_PAY, CREDIT_CARD...
+  product_sku      TEXT,             -- CLUB_PRODUCT, USER_BOOKING_REGISTRATION...
+  categoria        TEXT,
+  sport_id         TEXT,
+  -- Solo para articulos de tienda (extras)
+  item_code        TEXT,
+  item_name        TEXT,
+  unidades         INTEGER,
+  total            NUMERIC(10,2),    -- bruto que paga el cliente
+  subtotal         NUMERIC(10,2),    -- base imponible
+  taxes            NUMERIC(10,2),
+  comision         NUMERIC(10,2),    -- comision de Playtomic
+  comision_rate    NUMERIC(6,4),
+  comision_iva     NUMERIC(10,2),
+  neto_transferido NUMERIC(10,2),
+  moneda           TEXT,
+  raw              JSONB,
+  synced_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_payments_fecha  ON payments (payment_date);
+CREATE INDEX IF NOT EXISTS idx_payments_sku    ON payments (product_sku);
+CREATE INDEX IF NOT EXISTS idx_payments_metodo ON payments (metodo);
+
+-- Comisiones de Playtomic por mes. Solo los pagos que pasan por su
+-- pasarela generan comision; lo cobrado en el club no.
+DROP VIEW IF EXISTS monthly_commission;
+CREATE VIEW monthly_commission AS
+SELECT
+  date_trunc('month', payment_date AT TIME ZONE 'Europe/Madrid')::date AS month,
+  SUM(total)                                                   AS bruto,
+  SUM(COALESCE(comision,0))                                    AS comision,
+  SUM(COALESCE(comision_iva,0))                                AS comision_iva,
+  SUM(total) - SUM(COALESCE(comision,0))                       AS neto_estimado,
+  SUM(total) FILTER (WHERE comision > 0)                       AS bruto_con_comision,
+  COUNT(*)::int                                                AS pagos,
+  COUNT(*) FILTER (WHERE comision > 0)::int                    AS pagos_con_comision,
+  ROUND(100.0 * SUM(COALESCE(comision,0)) / NULLIF(SUM(total),0), 2) AS pct_sobre_bruto
+FROM payments
+WHERE status = 'PAID'
+GROUP BY 1;
+
+-- Extras vendidos: solo articulos de tienda, agrupados por producto.
+DROP VIEW IF EXISTS monthly_extras;
+CREATE VIEW monthly_extras AS
+SELECT
+  date_trunc('month', payment_date AT TIME ZONE 'Europe/Madrid')::date AS month,
+  item_code,
+  item_name,
+  SUM(COALESCE(unidades,1))::int AS unidades,
+  SUM(total)                     AS euros,
+  COUNT(*)::int                  AS ventas
+FROM payments
+WHERE status = 'PAID' AND item_name IS NOT NULL
+GROUP BY 1,2,3;

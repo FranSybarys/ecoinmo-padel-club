@@ -1,6 +1,6 @@
 // Objetivo del cron diario. Descarga de Playtomic y persiste en Postgres.
 // Protegido con CRON_SECRET: Vercel Cron manda ese bearer automaticamente.
-import { runSync } from '../lib/sync.mjs';
+import { runSync, runSyncPayments } from '../lib/sync.mjs';
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
@@ -24,8 +24,19 @@ export default async function handler(req, res) {
     // 35 dias cubre el mes en curso y el anterior, para recoger
     // cambios de estado de pago y cancelaciones tardias.
     const days = Number(req.query?.days ?? 35);
-    const result = await runSync({ days });
-    return res.status(200).json(result);
+    const reservas = await runSync({ days });
+
+    // Los pagos van despues y sin tumbar la ejecucion si fallan: son
+    // un extra sobre las reservas, que son el dato critico.
+    let pagos = null;
+    try {
+      pagos = await runSyncPayments({ days });
+    } catch (e) {
+      console.error('sync de pagos falló:', e);
+      pagos = { ok: false, error: String(e.message) };
+    }
+
+    return res.status(200).json({ reservas, pagos });
   } catch (err) {
     console.error('sync falló:', err);
     return res.status(500).json({ error: String(err.message) });

@@ -44,7 +44,8 @@ export default async function handler(req, res) {
     // Hasta ~2 meses el detalle diario se lee bien; mas alla, por mes.
     const grano = dias <= 62 ? 'day' : 'month';
 
-    const [kpi, serie, ocupacion, origen, canc, cancHora, cancTipo, pistas, tipos, objetivo] =
+    const [kpi, serie, ocupacion, origen, canc, cancHora, cancTipo, pistas, tipos,
+           comision, extras, objetivo] =
       await Promise.all([
         sql.query(`
           SELECT COALESCE(SUM(price_amount),0)::float8 AS facturacion,
@@ -83,15 +84,22 @@ export default async function handler(req, res) {
                      * (SELECT n FROM dias), 0))::numeric, 1)::float8 AS pct
           FROM franjas GROUP BY 1 ORDER BY 1`, [from, to]),
 
+        // Detalle por canal y grupo. Tres grupos, no dos: las importadas
+        // vienen de otro sistema y no las hizo ni el club ni el cliente.
         sql.query(`
-          SELECT CASE WHEN origin IN ('MANAGER','PLAYTOMIC_MANAGER')
-                   THEN 'directa' ELSE 'marketplace' END AS canal,
+          SELECT origin AS canal,
+                 CASE
+                   WHEN origin IN ('MANAGER','PLAYTOMIC_MANAGER') THEN 'manual'
+                   WHEN origin IN ('APP_IOS','APP_ANDROID','WEB_MOBILE','WEB_DESKTOP') THEN 'cliente'
+                   ELSE 'otro' END AS grupo,
                  COALESCE(SUM(price_amount),0)::float8 AS euros,
-                 COUNT(*)::int AS reservas
+                 COUNT(*)::int AS reservas,
+                 COALESCE(SUM(duration_min),0)::float8 / 60 AS horas,
+                 COUNT(DISTINCT owner_id)::int AS jugadores
           FROM bookings
           WHERE NOT is_canceled AND start_at >= $1 AND start_at < $2
             AND payment_status IN ('PAID','PARTIAL_PAID','PENDING','UNPAID')
-          GROUP BY 1`, [from, to]),
+          GROUP BY 1, 2 ORDER BY euros DESC`, [from, to]),
 
         sql.query(CANC_CTE + `
           SELECT estado, COUNT(*)::int AS n,
@@ -130,6 +138,29 @@ export default async function handler(req, res) {
             AND payment_status IN ('PAID','PARTIAL_PAID','PENDING','UNPAID')
           GROUP BY 1 ORDER BY euros DESC`, [from, to]),
 
+        // Comisiones de Playtomic. Solo los cobros por su pasarela la
+        // generan; lo cobrado en el club no paga nada.
+        sql.query(`
+          SELECT metodo,
+                 COUNT(*)::int AS pagos,
+                 COALESCE(SUM(total),0)::float8 AS bruto,
+                 COALESCE(SUM(comision),0)::float8 AS comision,
+                 COALESCE(SUM(comision_iva),0)::float8 AS comision_iva,
+                 MAX(comision_rate)::float8 AS tarifa
+          FROM payments
+          WHERE status = 'PAID' AND payment_date >= $1 AND payment_date < $2
+          GROUP BY 1 ORDER BY bruto DESC`, [from, to]),
+
+        sql.query(`
+          SELECT item_code, item_name,
+                 SUM(COALESCE(unidades,1))::int AS unidades,
+                 COALESCE(SUM(total),0)::float8 AS euros,
+                 COUNT(*)::int AS ventas
+          FROM payments
+          WHERE status = 'PAID' AND item_name IS NOT NULL
+            AND payment_date >= $1 AND payment_date < $2
+          GROUP BY 1,2 ORDER BY euros DESC`, [from, to]),
+
         sql.query(`SELECT COALESCE(SUM(target),0)::float8 AS objetivo
                    FROM targets WHERE month >= $1 AND month < $2`, [from, to]),
       ]);
@@ -138,7 +169,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       rango: { from, to, dias, grano },
       kpi: { ...kpi[0], objetivo: objetivo[0]?.objetivo ?? 0 },
-      serie, ocupacion, origen, tipos,
+      serie, ocupacion, origen, tipos, comision, extras,
       cancelaciones: { total: canc, por_hora: cancHora, por_tipo: cancTipo },
       pistas,
     });

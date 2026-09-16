@@ -1150,6 +1150,18 @@
       </div>`).join('');
   }
 
+  const METODO_NOM = {
+    ONSITE:'En el club', APPLE_PAY:'Apple Pay', CREDIT_CARD:'Tarjeta',
+    QUICK_PAY:'Pago rápido', MERCHANT_WALLET:'Monedero', DIRECT:'Directo',
+  };
+
+  const CANAL_NOM = {
+    PLAYTOMIC_MANAGER:'Manager · mostrador', MANAGER:'Manager · recepción',
+    APP_IOS:'App iPhone', APP_ANDROID:'App Android',
+    WEB_MOBILE:'Web móvil', WEB_DESKTOP:'Web escritorio',
+    IMPORTED:'Importada de otro sistema',
+  };
+
   const TIPO_NOM = {
     REGULAR_BOOKING:'Reserva normal', RECURRING_BOOKING:'Reserva recurrente',
     COURSE_CLASS:'Clase de curso', PRIVATE_CLASS:'Clase particular',
@@ -1179,9 +1191,14 @@
     const horasPerd = d.cancelaciones.total.reduce((a,x)=>a+(x.horas_perdidas||0),0);
     const eurPerd = (canc.vacia?.eur_devuelto||0) + (canc.parcial?.eur_devuelto||0);
 
-    const dir = d.origen.find(x=>x.canal==='directa')?.euros || 0;
-    const mkt = d.origen.find(x=>x.canal==='marketplace')?.euros || 0;
-    const totOrig = dir + mkt;
+    const sum = (g, campo) => (d.origen||[]).filter(x=>x.grupo===g)
+      .reduce((a,x)=>a+(x[campo]||0), 0);
+    const gr = {
+      manual:  {eur:sum('manual','euros'),  res:sum('manual','reservas'),  h:sum('manual','horas')},
+      cliente: {eur:sum('cliente','euros'), res:sum('cliente','reservas'), h:sum('cliente','horas')},
+      otro:    {eur:sum('otro','euros'),    res:sum('otro','reservas'),    h:sum('otro','horas')},
+    };
+    const totOrig = gr.manual.eur + gr.cliente.eur + gr.otro.eur;
 
     if(!k.reservas){
       const anterior = d.rango.from < PRIMER_DATO;
@@ -1224,17 +1241,40 @@
           <div class="d">${eur(eurPerd)} devueltos</div></div>
       </div>
 
-      <div class="card" data-mover="origen">
-        <h3>Origen de la facturación</h3>
-        <p class="note">Reservas creadas por el club frente a las que entran por Playtomic.</p>
+      <div class="card">
+        <h3>Quién hace la reserva</h3>
+        <p class="note">Reservas creadas a mano por el club frente a las que
+           hace el propio cliente desde la app o la web de Playtomic.</p>
         <div class="stack">
-          <span style="width:${totOrig?dir/totOrig*100:0}%;background:var(--s1)"></span>
-          <span style="width:${totOrig?mkt/totOrig*100:0}%;background:var(--s2)"></span>
+          ${gr.manual.eur  ? `<span style="width:${gr.manual.eur/totOrig*100}%;background:var(--s1)" title="Manual"></span>`:''}
+          ${gr.cliente.eur ? `<span style="width:${gr.cliente.eur/totOrig*100}%;background:var(--s2)" title="Cliente"></span>`:''}
+          ${gr.otro.eur    ? `<span style="width:${gr.otro.eur/totOrig*100}%;background:var(--neutro)" title="Importadas"></span>`:''}
         </div>
         <div class="leyenda">
-          <span><i style="background:var(--s1)"></i>Directa · ${eur(dir)} (${totOrig?Math.round(dir/totOrig*100):0}%)</span>
-          <span><i style="background:var(--s2)"></i>Marketplace · ${eur(mkt)} (${totOrig?Math.round(mkt/totOrig*100):0}%)</span>
+          <span><i style="background:var(--s1)"></i><strong>Manual</strong> · ${eur(gr.manual.eur)}
+            (${totOrig?Math.round(gr.manual.eur/totOrig*100):0}%) · ${gr.manual.res} reservas</span>
+          <span><i style="background:var(--s2)"></i><strong>Cliente</strong> · ${eur(gr.cliente.eur)}
+            (${totOrig?Math.round(gr.cliente.eur/totOrig*100):0}%) · ${gr.cliente.res} reservas</span>
+          ${gr.otro.eur ? `<span><i style="background:var(--neutro)"></i>Importadas · ${eur(gr.otro.eur)}</span>`:''}
         </div>
+
+        <table class="det-tabla" style="margin-top:20px;">
+          <thead><tr><th>Canal</th><th class="n">Reservas</th><th class="n">Horas</th>
+            <th class="n">Facturación</th><th class="n">Media/reserva</th></tr></thead>
+          <tbody>
+            ${(d.origen||[]).map(c=>{
+              const col = c.grupo==='manual' ? 'var(--s1)'
+                        : c.grupo==='cliente' ? 'var(--s2)' : 'var(--neutro)';
+              return `<tr>
+                <td><i style="display:inline-block;width:10px;height:10px;border-radius:3px;
+                     background:${col};margin-right:8px;"></i>${CANAL_NOM[c.canal]||c.canal}</td>
+                <td class="n">${c.reservas}</td>
+                <td class="n">${Math.round(c.horas||0)}</td>
+                <td class="n">${eur(c.euros)}</td>
+                <td class="n">${c.reservas?eur(c.euros/c.reservas):'—'}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
       </div>
 
       <div class="card">
@@ -1311,6 +1351,79 @@
               </tr></tfoot>
             </table>`;
         })()}
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Comisiones de Playtomic</h3>
+          <p class="note">Solo la cobra sobre los pagos que pasan por su pasarela.
+             Lo cobrado en el club no paga comisión.</p>
+          ${(()=>{
+            const c = d.comision || [];
+            if(!c.length) return '<p class="vacio">Sin cobros registrados en este periodo.</p>';
+            const bruto = c.reduce((a,x)=>a+x.bruto,0);
+            const com   = c.reduce((a,x)=>a+x.comision,0);
+            const iva   = c.reduce((a,x)=>a+x.comision_iva,0);
+            return `
+              <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:18px;">
+                <div><div class="k" style="font-size:11.5px;color:var(--muted);">Bruto cobrado</div>
+                  <div style="font-family:'Oswald',sans-serif;font-weight:600;font-size:22px;">${eur(bruto)}</div></div>
+                <div><div class="k" style="font-size:11.5px;color:var(--muted);">Comisión</div>
+                  <div style="font-family:'Oswald',sans-serif;font-weight:600;font-size:22px;color:var(--s2);">
+                    ${eur(com)}</div>
+                  <div style="font-size:11px;color:var(--muted-2);">+ ${eur(iva)} de IVA</div></div>
+                <div><div class="k" style="font-size:11.5px;color:var(--muted);">Sobre el bruto</div>
+                  <div style="font-family:'Oswald',sans-serif;font-weight:600;font-size:22px;">
+                    ${bruto?(100*com/bruto).toFixed(2):'0.00'}%</div></div>
+              </div>
+              <table class="det-tabla">
+                <thead><tr><th>Método de pago</th><th class="n">Pagos</th>
+                  <th class="n">Bruto</th><th class="n">Comisión</th><th class="n">Tarifa</th></tr></thead>
+                <tbody>${c.map(x=>`<tr>
+                  <td>${METODO_NOM[x.metodo]||x.metodo||'—'}</td>
+                  <td class="n">${x.pagos}</td>
+                  <td class="n">${eur(x.bruto)}</td>
+                  <td class="n" style="color:${x.comision>0?'var(--s2)':'var(--muted-2)'}">
+                    ${x.comision>0?eur(x.comision):'—'}</td>
+                  <td class="n">${x.tarifa?(100*x.tarifa).toFixed(2)+'%':'—'}</td></tr>`).join('')}
+                </tbody>
+              </table>`;
+          })()}
+        </div>
+
+        <div class="card">
+          <h3>Extras vendidos</h3>
+          <p class="note">Productos que el cliente añade a la reserva o compra en el club.</p>
+          ${(()=>{
+            const e = d.extras || [];
+            if(!e.length) return '<p class="vacio">Sin extras vendidos en este periodo.</p>';
+            const tot = e.reduce((a,x)=>a+x.euros,0);
+            const max = Math.max(...e.map(x=>x.euros), 1);
+            return `
+              <div style="margin-bottom:16px;">
+                <div class="k" style="font-size:11.5px;color:var(--muted);">Total en extras</div>
+                <div style="font-family:'Oswald',sans-serif;font-weight:600;font-size:26px;">${eur(tot)}</div>
+                <div style="font-size:11.5px;color:var(--muted-2);">
+                  ${(100*tot/(d.kpi.facturacion||1)).toFixed(1)}% de la facturación de pista</div>
+              </div>
+              ${e.map(x=>`
+                <div class="hbar">
+                  <span class="lbl">${(x.item_name||'—').slice(0,12)}</span>
+                  <span class="trk"><span class="fil"
+                        style="width:${x.euros/max*100}%;background:var(--s3)"></span></span>
+                  <span class="val">${eur(x.euros)}</span>
+                </div>`).join('')}
+              <table class="det-tabla" style="margin-top:16px;">
+                <thead><tr><th>Producto</th><th class="n">Unidades</th>
+                  <th class="n">Ventas</th><th class="n">Importe</th><th class="n">P. medio</th></tr></thead>
+                <tbody>${e.map(x=>`<tr>
+                  <td>${x.item_name||'—'}</td><td class="n">${x.unidades}</td>
+                  <td class="n">${x.ventas}</td><td class="n">${eur(x.euros)}</td>
+                  <td class="n">${x.unidades?(x.euros/x.unidades).toFixed(2)+' €':'—'}</td></tr>`).join('')}
+                </tbody>
+              </table>`;
+          })()}
+        </div>
       </div>
 
       <div class="card">
