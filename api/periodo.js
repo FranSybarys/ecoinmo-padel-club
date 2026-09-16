@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     // Hasta ~2 meses el detalle diario se lee bien; mas alla, por mes.
     const grano = dias <= 62 ? 'day' : 'month';
 
-    const [kpi, serie, ocupacion, origen, canc, cancHora, cancTipo, pistas, objetivo] =
+    const [kpi, serie, ocupacion, origen, canc, cancHora, cancTipo, pistas, tipos, objetivo] =
       await Promise.all([
         sql.query(`
           SELECT COALESCE(SUM(price_amount),0)::float8 AS facturacion,
@@ -120,6 +120,16 @@ export default async function handler(req, res) {
           WHERE b.start_at >= $1 AND b.start_at < $2
           GROUP BY 1 ORDER BY euros DESC`, [from, to]),
 
+        sql.query(`
+          SELECT booking_type AS tipo,
+                 COUNT(*)::int AS reservas,
+                 COALESCE(SUM(price_amount),0)::float8 AS euros,
+                 COALESCE(SUM(duration_min),0)::float8 / 60 AS horas
+          FROM bookings
+          WHERE NOT is_canceled AND start_at >= $1 AND start_at < $2
+            AND payment_status IN ('PAID','PARTIAL_PAID','PENDING','UNPAID')
+          GROUP BY 1 ORDER BY euros DESC`, [from, to]),
+
         sql.query(`SELECT COALESCE(SUM(target),0)::float8 AS objetivo
                    FROM targets WHERE month >= $1 AND month < $2`, [from, to]),
       ]);
@@ -128,7 +138,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       rango: { from, to, dias, grano },
       kpi: { ...kpi[0], objetivo: objetivo[0]?.objetivo ?? 0 },
-      serie, ocupacion, origen,
+      serie, ocupacion, origen, tipos,
       cancelaciones: { total: canc, por_hora: cancHora, por_tipo: cancTipo },
       pistas,
     });
