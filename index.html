@@ -624,6 +624,21 @@
     </table>
   </div>
 
+  <div class="board" id="board-previos" hidden style="margin-top:-6px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Antes del ejercicio<span class="th-hint">no computan para el objetivo ni la comisión</span></th>
+          <th class="num">Facturación</th>
+          <th class="num">Reservas</th>
+          <th class="num">Directa</th>
+          <th class="num">Marketplace</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-previos"></tbody>
+    </table>
+  </div>
+
   <div class="panel" id="panel-ocupacion" hidden>
     <h2>Ocupación por franja</h2>
     <p class="sub" id="occ-sub">—</p>
@@ -1073,6 +1088,67 @@
     document.getElementById('panel-cancelaciones').hidden = false;
   }
 
+  // Meses con datos anteriores al ejercicio. No entran en MONTHS porque
+  // no tienen objetivo y no deben sumar ni en el total ni en la comision.
+  const PREVIOS = [
+    {iso:'2026-06-01', nombre:'Junio',   anio:'26'},
+    {iso:'2026-07-01', nombre:'Julio',   anio:'26'},
+    {iso:'2026-08-01', nombre:'Agosto',  anio:'26'},
+  ];
+
+  async function pintarPrevios(){
+    const filas = await Promise.all(PREVIOS.map(async (m)=>{
+      const hasta = addMeses(m.iso, 1);
+      try{
+        const r = await fetch(`/api/periodo?from=${m.iso}&to=${hasta}`);
+        if(!r.ok) return null;
+        const d = await r.json();
+        if(!d.kpi?.reservas) return null;
+        return {...m,
+          fact: d.kpi.facturacion, res: d.kpi.reservas,
+          dir: d.origen.find(x=>x.canal==='directa')?.euros || 0,
+          mkt: d.origen.find(x=>x.canal==='marketplace')?.euros || 0};
+      }catch(e){ return null; }
+    }));
+
+    const con = filas.filter(Boolean);
+    if(!con.length) return;
+
+    const f2 = (n) => n.toLocaleString('es-ES',
+      {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+
+    document.getElementById('tbody-previos').innerHTML = con.map(m=>`
+      <tr>
+        <td>
+          <div class="month-cell">
+            <span class="status-dot"></span>
+            <span class="month-name">${m.nombre}</span>
+            <span class="month-year">'${m.anio}</span>
+            <button type="button" class="rep-btn" data-mes="${m.iso}"
+                    title="Ver informe de ${m.nombre} 20${m.anio}">
+              ${ICON_CHART}<span class="rep-txt">Informe</span>
+            </button>
+          </div>
+        </td>
+        <td class="num">${f2(m.fact)}</td>
+        <td class="num">${m.res}</td>
+        <td class="num" style="color:#3987e5">${f2(m.dir)}</td>
+        <td class="num" style="color:#d95926">${f2(m.mkt)}</td>
+      </tr>`).join('');
+
+    document.getElementById('board-previos').hidden = false;
+  }
+
+  document.getElementById('tbody-previos').addEventListener('click', (e)=>{
+    const b = e.target.closest('.rep-btn');
+    if(!b) return;
+    det.periodo = 'mes';
+    det.el.querySelectorAll('.seg button').forEach(x=>
+      x.setAttribute('aria-pressed', String(x.dataset.per === 'mes')));
+    det.ancla = b.dataset.mes;
+    abrirDetalle();
+  });
+
   async function cargarDatos(){
     const tag = document.getElementById('sync-tag');
     try{
@@ -1115,7 +1191,11 @@
   }
 
   // ================= Panel de detalle por periodo =================
-  const EJ_INI = '2026-09-01', EJ_FIN = '2027-09-01';   // ejercicio
+  const EJ_INI = '2026-09-01', EJ_FIN = '2027-09-01';   // ejercicio actual
+  // Se puede navegar hacia atras mas alla del ejercicio, aunque Playtomic
+  // solo conserva 3 meses y antes de junio de 2026 no hay nada que mostrar.
+  const LIMITE_INI = '2025-10-01';
+  const PRIMER_DATO = '2026-06-01';
   const MES_NOM = ['','enero','febrero','marzo','abril','mayo','junio','julio',
                    'agosto','septiembre','octubre','noviembre','diciembre'];
 
@@ -1139,9 +1219,13 @@
   // que empieza en septiembre y no en enero.
   function alinear(iso, periodo){
     const n = LONGITUD[periodo];
-    const meses = (new Date(iso+'T00:00:00Z') - new Date(EJ_INI+'T00:00:00Z')) / 86400000 / 30.4;
-    const idx = Math.max(0, Math.floor(Math.round(meses) / n));
-    return addMeses(EJ_INI, idx * n);
+    const a = new Date(iso+'T00:00:00Z'), b = new Date(EJ_INI+'T00:00:00Z');
+    const meses = (a.getUTCFullYear()-b.getUTCFullYear())*12 + (a.getUTCMonth()-b.getUTCMonth());
+    // Math.floor tambien con negativos: los periodos previos al ejercicio
+    // deben encajar en la misma rejilla, no colapsar en septiembre.
+    const idx = Math.floor(meses / n);
+    const r = addMeses(EJ_INI, idx * n);
+    return r < LIMITE_INI ? alinear(LIMITE_INI, periodo) : r;
   }
 
   function etiqueta(desde, periodo){
@@ -1150,7 +1234,8 @@
     const hasta = addMeses(desde, LONGITUD[periodo]);
     const h = new Date(hasta+'T00:00:00Z'); h.setUTCDate(h.getUTCDate()-1);
     if(periodo === 'mes')   return `${MES_NOM[m]} de ${y}`;
-    if(periodo === 'anual') return `Ejercicio ${y}–${y+1}`;
+    if(periodo === 'anual') return m === 9 ? `Ejercicio ${y}–${y+1}`
+                                           : `12 meses desde ${MES_NOM[m]} ${y}`;
     const nom = periodo === 'trimestre' ? 'Trimestre' : 'Semestre';
     const idx = Math.floor(((y*12+m) - (2026*12+9)) / LONGITUD[periodo]) + 1;
     return `${nom} ${idx} · ${MES_NOM[m]}–${MES_NOM[h.getUTCMonth()+1]} ${h.getUTCFullYear()}`;
@@ -1197,7 +1282,15 @@
     const totOrig = dir + mkt;
 
     if(!k.reservas){
-      det.body.innerHTML = '<div class="card"><p class="vacio">Sin datos para este periodo.</p></div>';
+      const anterior = d.rango.from < PRIMER_DATO;
+      det.body.innerHTML = `<div class="card"><p class="vacio">
+        <strong style="color:var(--text);">Sin datos para este periodo.</strong><br><br>
+        ${anterior
+          ? 'Playtomic solo conserva 3 meses de histórico y la primera descarga se hizo el '
+            + '16 de septiembre de 2026, así que no existe registro anterior al 19 de junio de 2026. '
+            + 'Ese dato ya no está disponible en ninguna parte.'
+          : 'Todavía no hay reservas registradas en este periodo.'}
+        </p></div>`;
       return;
     }
 
@@ -1340,7 +1433,7 @@
     det.el.hidden = false;
     document.body.style.overflow = 'hidden';
 
-    document.getElementById('det-prev').disabled = desde <= EJ_INI;
+    document.getElementById('det-prev').disabled = desde <= LIMITE_INI;
     document.getElementById('det-next').disabled = hasta >= EJ_FIN;
 
     try{
@@ -1396,6 +1489,7 @@
   refreshAllCells();
   recalc();
   cargarDatos();
+  pintarPrevios();
 })();
 </script>
 </body>

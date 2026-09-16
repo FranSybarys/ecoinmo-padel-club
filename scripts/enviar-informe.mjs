@@ -8,7 +8,7 @@
 // verificado ecoinmo.com; NO es la misma que RESEND_API_KEY).
 import { readFileSync } from 'node:fs';
 
-const FROM = 'Campus Pádel Club <reporting@ecoinmo.com>';
+const FROM = 'Campus Pádel Club <tech.reporting@ecoinmo.com>';
 
 // El buzon reporting@ solo sirve para enviar: el MX de ecoinmo.com
 // apunta a Microsoft 365 y si esa direccion no existe alli, cualquier
