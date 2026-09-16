@@ -1,0 +1,19 @@
+{
+  "name": "ecoinmo-padel-club",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dashboard de objetivos y ocupación de Campus Pádel Club (PTS Granada)",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve . -l 4173",
+    "db:init": "node scripts/init-db.mjs",
+    "sync": "node scripts/sync-local.mjs",
+    "dev:api": "vercel dev --listen 4174"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
