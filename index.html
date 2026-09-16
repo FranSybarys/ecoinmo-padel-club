@@ -222,6 +222,126 @@
   }
   .sync-tag.error{ color:var(--fuchsia); }
 
+  /* ---------- Botón de informe por mes ---------- */
+  .rep-btn{
+    background:none; border:1px solid var(--line); color:var(--muted-2);
+    width:30px; height:30px; padding:0; border-radius:8px; cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .rep-btn:hover{ border-color:var(--fuchsia); color:var(--fuchsia); }
+  .rep-btn svg{ width:15px; height:15px; display:block; }
+  .rep-btn[disabled]{ opacity:.25; cursor:default; }
+  .rep-btn[disabled]:hover{ border-color:var(--line); color:var(--muted-2); }
+
+  /* ---------- Panel de detalle ---------- */
+  #detalle{
+    position:fixed; inset:0; z-index:90;
+    background:rgba(7,7,8,.96);
+    overflow-y:auto; padding:clamp(16px,3vw,40px);
+  }
+  #detalle[hidden]{ display:none; }
+  .det-wrap{ max-width:1100px; margin:0 auto; }
+  .det-head{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    gap:20px; flex-wrap:wrap; margin-bottom:24px;
+  }
+  .det-title{ font-family:'Oswald',sans-serif; font-weight:700; font-size:clamp(22px,3vw,32px); margin:0; }
+  .det-title em{ font-style:normal; color:var(--fuchsia); }
+  .det-close{
+    background:none; border:1px solid var(--line); color:var(--muted);
+    border-radius:100px; padding:8px 16px; cursor:pointer; font-size:13px;
+    font-family:'Inter',sans-serif;
+  }
+  .det-close:hover{ border-color:var(--fuchsia); color:var(--text); }
+
+  .det-nav{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:22px; }
+  .seg{ display:inline-flex; border:1px solid var(--line); border-radius:100px; overflow:hidden; }
+  .seg button{
+    background:none; border:none; color:var(--muted); cursor:pointer;
+    font-family:'Inter',sans-serif; font-size:12.5px; padding:7px 14px;
+  }
+  .seg button[aria-pressed="true"]{ background:var(--fuchsia); color:#0b0b0c; font-weight:600; }
+  .nav-btn{
+    background:none; border:1px solid var(--line); color:var(--muted);
+    border-radius:8px; width:32px; height:32px; cursor:pointer; font-size:15px;
+  }
+  .nav-btn:hover:not([disabled]){ border-color:var(--fuchsia); color:var(--text); }
+  .nav-btn[disabled]{ opacity:.3; cursor:default; }
+  .nav-label{
+    font-family:'Space Mono',monospace; font-size:13px; color:var(--text);
+    min-width:190px; text-align:center;
+  }
+
+  /* Paleta de datos: orden canónico validado para daltonismo sobre fondo
+     oscuro. El fucsia de marca se queda en la interfaz, no en los datos. */
+  .det-wrap{
+    --s1:#3987e5;  /* directa */
+    --s2:#d95926;  /* marketplace / vacía */
+    --s3:#199e70;  /* ocupación / recuperada */
+    --s4:#c98500;  /* parcial */
+    --neutro:#615d63;
+  }
+
+  .kpi-row{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px; margin-bottom:24px;
+  }
+  .kpi-box{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:12px; padding:14px 16px;
+  }
+  .kpi-box .k{ font-size:11.5px; color:var(--muted); margin-bottom:6px; }
+  .kpi-box .v{
+    font-family:'Oswald',sans-serif; font-weight:600; font-size:24px;
+    font-variant-numeric:tabular-nums;
+  }
+  .kpi-box .d{ font-size:11.5px; color:var(--muted-2); margin-top:4px; }
+  .kpi-box.hero .v{ font-size:34px; color:var(--text); }
+
+  .card{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:14px; padding:18px 20px; margin-bottom:16px;
+  }
+  .card h3{
+    font-family:'Oswald',sans-serif; font-weight:600; font-size:15px;
+    margin:0 0 3px 0; letter-spacing:.02em;
+  }
+  .card .note{ font-size:12px; color:var(--muted); margin:0 0 16px 0; }
+  .grid2{ display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px; }
+
+  .leyenda{ display:flex; gap:16px; flex-wrap:wrap; margin-top:14px; font-size:12px; color:var(--muted); }
+  .leyenda i{ width:10px; height:10px; border-radius:3px; display:inline-block; margin-right:6px; }
+
+  /* Barras horizontales */
+  .hbar{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .hbar .lbl{
+    width:74px; flex-shrink:0; text-align:right;
+    font-family:'Space Mono',monospace; font-size:11px; color:var(--muted);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .hbar .trk{ flex:1; height:15px; background:var(--surface-2); border-radius:4px; overflow:hidden; }
+  .hbar .fil{ display:block; height:100%; border-radius:4px; }
+  .hbar .val{
+    width:82px; flex-shrink:0;
+    font-family:'Space Mono',monospace; font-size:11px; color:var(--muted);
+  }
+
+  /* Barra apilada */
+  .stack{ display:flex; height:26px; border-radius:6px; overflow:hidden; background:var(--surface-2); gap:2px; }
+  .stack span{ display:block; height:100%; }
+
+  .det-tabla{ width:100%; border-collapse:collapse; font-size:13px; }
+  .det-tabla th{
+    text-align:left; font-size:11px; color:var(--muted); font-weight:600;
+    padding:6px 8px; border-bottom:1px solid var(--line);
+  }
+  .det-tabla td{ padding:7px 8px; border-bottom:1px solid var(--line); }
+  .det-tabla td.n{ text-align:right; font-family:'Space Mono',monospace; }
+  .det-tabla tr:last-child td{ border-bottom:none; }
+
+  .vacio{ color:var(--muted-2); font-size:13px; padding:20px 0; text-align:center; }
+
   .th-hint{
     display:block; margin-top:3px;
     font-weight:400; font-size:10.5px; color:var(--muted-2);
@@ -430,6 +550,7 @@
           <th class="num">Diferencia</th>
           <th class="num">Comisión</th>
           <th style="width:110px;">Progreso</th>
+          <th style="width:44px;"><span class="sr-only">Informe</span></th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -440,6 +561,7 @@
           <td class="num" id="foot-actual">–</td>
           <td class="num" id="foot-diff">–</td>
           <td class="num" id="foot-commission">–</td>
+          <td></td>
           <td></td>
         </tr>
       </tfoot>
@@ -461,6 +583,29 @@
     <p class="sub">Separadas por quién cancela: el jugador o el propio club.</p>
     <div id="canc-body"></div>
   </div>
+
+<div id="detalle" hidden role="dialog" aria-modal="true" aria-labelledby="det-title">
+  <div class="det-wrap">
+    <div class="det-head">
+      <h2 class="det-title" id="det-title">—</h2>
+      <button type="button" class="det-close" id="det-close">Cerrar ✕</button>
+    </div>
+
+    <div class="det-nav">
+      <div class="seg" role="group" aria-label="Periodo">
+        <button type="button" data-per="mes"       aria-pressed="true">Mes</button>
+        <button type="button" data-per="trimestre" aria-pressed="false">Trimestre</button>
+        <button type="button" data-per="semestre"  aria-pressed="false">Semestre</button>
+        <button type="button" data-per="anual"     aria-pressed="false">Año</button>
+      </div>
+      <button type="button" class="nav-btn" id="det-prev" aria-label="Periodo anterior">‹</button>
+      <span class="nav-label" id="det-label">—</span>
+      <button type="button" class="nav-btn" id="det-next" aria-label="Periodo siguiente">›</button>
+    </div>
+
+    <div id="det-body"></div>
+  </div>
+</div>
 
   <span class="sync-tag" id="sync-tag"></span>
 
@@ -536,20 +681,21 @@
 <script>
 (function(){
   const MONTHS = [
-    {key:'sep26', name:'Septiembre', year:'2026', target:13100},
-    {key:'oct26', name:'Octubre',    year:'2026', target:14500},
-    {key:'nov26', name:'Noviembre',  year:'2026', target:13850},
-    {key:'dic26', name:'Diciembre',  year:'2026', target:5600},
-    {key:'ene27', name:'Enero',      year:'2027', target:19487},
-    {key:'feb27', name:'Febrero',    year:'2027', target:14316},
-    {key:'mar27', name:'Marzo',      year:'2027', target:13467},
-    {key:'abr27', name:'Abril',      year:'2027', target:15876},
-    {key:'may27', name:'Mayo',       year:'2027', target:18578},
-    {key:'jun27', name:'Junio',      year:'2027', target:15243},
-    {key:'jul27', name:'Julio',      year:'2027', target:12345},
-    {key:'ago27', name:'Agosto',     year:'2027', target:7331.75},
+    {key:'sep26', name:'Septiembre', year:'2026', target:13100, iso:'2026-09-01'},
+    {key:'oct26', name:'Octubre',    year:'2026', target:14500, iso:'2026-10-01'},
+    {key:'nov26', name:'Noviembre',  year:'2026', target:13850, iso:'2026-11-01'},
+    {key:'dic26', name:'Diciembre',  year:'2026', target:5600, iso:'2026-12-01'},
+    {key:'ene27', name:'Enero',      year:'2027', target:19487, iso:'2027-01-01'},
+    {key:'feb27', name:'Febrero',    year:'2027', target:14316, iso:'2027-02-01'},
+    {key:'mar27', name:'Marzo',      year:'2027', target:13467, iso:'2027-03-01'},
+    {key:'abr27', name:'Abril',      year:'2027', target:15876, iso:'2027-04-01'},
+    {key:'may27', name:'Mayo',       year:'2027', target:18578, iso:'2027-05-01'},
+    {key:'jun27', name:'Junio',      year:'2027', target:15243, iso:'2027-06-01'},
+    {key:'jul27', name:'Julio',      year:'2027', target:12345, iso:'2027-07-01'},
+    {key:'ago27', name:'Agosto',     year:'2027', target:7331.75, iso:'2027-08-01'},
   ];
   const STORAGE_KEY = 'pts_objetivos_2026_2027_v1';
+  const ICON_CHART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>';
   const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>';
   const ANNUAL_BONUS = 1000;
 
@@ -633,6 +779,11 @@
         </td>
         <td class="num diff" id="diff-${m.key}">—</td>
         <td class="num comm-cell zero" id="comm-${m.key}">—</td>
+        <td style="width:44px;">
+          <button type="button" class="rep-btn" data-mes="${m.iso}"
+                  title="Ver informe de ${m.name} ${m.year}"
+                  aria-label="Ver informe de ${m.name} ${m.year}">${ICON_CHART}</button>
+        </td>
         <td>
           <div class="bar-track"><div class="bar-fill" id="bar-${m.key}" style="width:0%"></div></div>
         </td>
@@ -817,7 +968,8 @@
     delMes.forEach(f => {
       const pct = f.ocupacion_pct ?? 0;
       // Verde cuando la franja rinde, fucsia cuando esta muerta.
-      const color = pct >= 50 ? 'var(--court)' : pct >= 25 ? 'var(--gold)' : 'var(--fuchsia)';
+      // Misma escala validada que el panel de detalle.
+      const color = pct >= 50 ? '#199e70' : pct >= 25 ? '#c98500' : '#d95926';
       const row = document.createElement('div');
       row.className = 'occ-row';
       row.innerHTML = `
@@ -900,6 +1052,271 @@
       tag.textContent = 'No se pudieron cargar los datos de Playtomic: ' + err.message;
     }
   }
+
+  // ================= Panel de detalle por periodo =================
+  const EJ_INI = '2026-09-01', EJ_FIN = '2027-09-01';   // ejercicio
+  const MES_NOM = ['','enero','febrero','marzo','abril','mayo','junio','julio',
+                   'agosto','septiembre','octubre','noviembre','diciembre'];
+
+  const det = {
+    el:    document.getElementById('detalle'),
+    body:  document.getElementById('det-body'),
+    titulo:document.getElementById('det-title'),
+    label: document.getElementById('det-label'),
+    periodo:'mes',
+    ancla: EJ_INI,      // primer día del periodo mostrado
+  };
+
+  const addMeses = (iso, n) => {
+    const d = new Date(iso + 'T00:00:00Z');
+    d.setUTCMonth(d.getUTCMonth() + n);
+    return d.toISOString().slice(0,10);
+  };
+  const LONGITUD = { mes:1, trimestre:3, semestre:6, anual:12 };
+
+  // Encaja la fecha en el periodo que le corresponde dentro del ejercicio,
+  // que empieza en septiembre y no en enero.
+  function alinear(iso, periodo){
+    const n = LONGITUD[periodo];
+    const meses = (new Date(iso+'T00:00:00Z') - new Date(EJ_INI+'T00:00:00Z')) / 86400000 / 30.4;
+    const idx = Math.max(0, Math.floor(Math.round(meses) / n));
+    return addMeses(EJ_INI, idx * n);
+  }
+
+  function etiqueta(desde, periodo){
+    const d = new Date(desde+'T00:00:00Z');
+    const m = d.getUTCMonth()+1, y = d.getUTCFullYear();
+    const hasta = addMeses(desde, LONGITUD[periodo]);
+    const h = new Date(hasta+'T00:00:00Z'); h.setUTCDate(h.getUTCDate()-1);
+    if(periodo === 'mes')   return `${MES_NOM[m]} de ${y}`;
+    if(periodo === 'anual') return `Ejercicio ${y}–${y+1}`;
+    const nom = periodo === 'trimestre' ? 'Trimestre' : 'Semestre';
+    const idx = Math.floor(((y*12+m) - (2026*12+9)) / LONGITUD[periodo]) + 1;
+    return `${nom} ${idx} · ${MES_NOM[m]}–${MES_NOM[h.getUTCMonth()+1]} ${h.getUTCFullYear()}`;
+  }
+
+  const eur = (n) => (n==null?0:n).toLocaleString('es-ES',
+    {minimumFractionDigits:0, maximumFractionDigits:0}) + ' €';
+
+  function barras(filas, {max, color, fmt, etiq}){
+    const tope = max ?? Math.max(...filas.map(f=>f.v), 1);
+    return filas.map(f => `
+      <div class="hbar">
+        <span class="lbl">${etiq(f)}</span>
+        <span class="trk"><span class="fil" style="width:${Math.max(0,Math.min(f.v/tope*100,100))}%;
+              background:${typeof color==='function'?color(f):color}"></span></span>
+        <span class="val">${fmt(f)}</span>
+      </div>`).join('');
+  }
+
+  const ESTADOS = {
+    sustituida: {t:'Sustituida', c:'var(--neutro)', d:'otra reserva ocupó el mismo hueco'},
+    recuperada: {t:'Recuperada', c:'var(--s3)',     d:'el hueco se revendió'},
+    parcial:    {t:'Parcial',    c:'var(--s4)',     d:'se ocupó solo una parte'},
+    vacia:      {t:'Vacía',      c:'var(--s2)',     d:'la pista se quedó sin nadie'},
+  };
+
+  function render(d){
+    const k = d.kpi;
+    const pct = k.objetivo > 0 ? (k.facturacion / k.objetivo * 100) : null;
+    // Media aritmetica de las franjas: incluye las horas muertas, por eso
+    // se acompana del pico, que es lo que de verdad indica si hay demanda.
+    const ocupMedia = d.ocupacion.length
+      ? d.ocupacion.reduce((a,x)=>a+(x.pct||0),0) / d.ocupacion.length : 0;
+    const pico = d.ocupacion.reduce((a,x)=>(x.pct||0)>(a.pct||0)?x:a, {pct:0,hora:0});
+    const picoOcup = pico.pct || 0, picoHora = String(pico.hora).padStart(2,'0');
+
+    const canc = Object.fromEntries(d.cancelaciones.total.map(x=>[x.estado,x]));
+    const totalCanc = d.cancelaciones.total.reduce((a,x)=>a+x.n,0);
+    const horasPerd = d.cancelaciones.total.reduce((a,x)=>a+(x.horas_perdidas||0),0);
+    const eurPerd = (canc.vacia?.eur_devuelto||0) + (canc.parcial?.eur_devuelto||0);
+
+    const dir = d.origen.find(x=>x.canal==='directa')?.euros || 0;
+    const mkt = d.origen.find(x=>x.canal==='marketplace')?.euros || 0;
+    const totOrig = dir + mkt;
+
+    if(!k.reservas){
+      det.body.innerHTML = '<div class="card"><p class="vacio">Sin datos para este periodo.</p></div>';
+      return;
+    }
+
+    det.body.innerHTML = `
+      <div class="kpi-row">
+        <div class="kpi-box hero">
+          <div class="k">Facturación</div>
+          <div class="v">${eur(k.facturacion)}</div>
+          <div class="d">${pct!=null ? pct.toFixed(1)+'% del objetivo ('+eur(k.objetivo)+')' : 'sin objetivo fijado'}</div>
+        </div>
+        <div class="kpi-box"><div class="k">Reservas</div><div class="v">${k.reservas}</div>
+          <div class="d">${k.jugadores} jugadores distintos</div></div>
+        <div class="kpi-box"><div class="k">Ocupación media por franja</div>
+          <div class="v">${ocupMedia.toFixed(0)}%</div>
+          <div class="d">${Math.round(k.horas_jugadas)} h jugadas · pico ${picoOcup.toFixed(0)}% a las ${picoHora}h</div></div>
+        <div class="kpi-box"><div class="k">Horas perdidas</div>
+          <div class="v" style="color:var(--s2)">${Math.round(horasPerd)}</div>
+          <div class="d">${eur(eurPerd)} devueltos</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Origen de la facturación</h3>
+        <p class="note">Reservas creadas por el club frente a las que entran por Playtomic.</p>
+        <div class="stack">
+          <span style="width:${totOrig?dir/totOrig*100:0}%;background:var(--s1)"></span>
+          <span style="width:${totOrig?mkt/totOrig*100:0}%;background:var(--s2)"></span>
+        </div>
+        <div class="leyenda">
+          <span><i style="background:var(--s1)"></i>Directa · ${eur(dir)} (${totOrig?Math.round(dir/totOrig*100):0}%)</span>
+          <span><i style="background:var(--s2)"></i>Marketplace · ${eur(mkt)} (${totOrig?Math.round(mkt/totOrig*100):0}%)</span>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Ocupación por franja</h3>
+          <p class="note">Horas-pista vendidas sobre las disponibles.</p>
+          ${barras(d.ocupacion.map(o=>({...o, v:o.pct||0})), {
+            max:100,
+            color:(f)=> f.v>=50 ? 'var(--s3)' : f.v>=25 ? 'var(--s4)' : 'var(--s2)',
+            etiq:(f)=> String(f.hora).padStart(2,'0')+'h',
+            fmt:(f)=> (f.pct||0).toFixed(0)+'%'})}
+          <div class="leyenda">
+            <span><i style="background:var(--s3)"></i>≥50%</span>
+            <span><i style="background:var(--s4)"></i>25–49%</span>
+            <span><i style="background:var(--s2)"></i>&lt;25%</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Facturación por pista</h3>
+          <p class="note">Solo reservas no canceladas.</p>
+          ${barras(d.pistas.slice(0,10).map(p=>({...p, v:p.euros})), {
+            color:'var(--s1)',
+            etiq:(f)=> (f.pista||'—').replace(/\s*\((Cubierta|Descubierta)\)/,'').slice(0,12),
+            fmt:(f)=> eur(f.euros)})}
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Informe de cancelaciones</h3>
+        <p class="note">${totalCanc} cancelaciones en el periodo. Lo que importa no es cuántas,
+           sino si la pista se volvió a llenar.</p>
+        <div class="stack">
+          ${['sustituida','recuperada','parcial','vacia'].map(e=>{
+            const n = canc[e]?.n || 0;
+            return n ? `<span style="width:${n/totalCanc*100}%;background:${ESTADOS[e].c}"
+                              title="${ESTADOS[e].t}: ${n}"></span>` : '';
+          }).join('')}
+        </div>
+        <table class="det-tabla" style="margin-top:16px;">
+          <thead><tr><th>Qué pasó con la hora</th><th class="n">Reservas</th>
+            <th class="n">%</th><th class="n">Horas perdidas</th><th class="n">Devuelto</th></tr></thead>
+          <tbody>
+            ${['sustituida','recuperada','parcial','vacia'].map(e=>{
+              const x = canc[e]; if(!x) return '';
+              return `<tr>
+                <td><i style="display:inline-block;width:10px;height:10px;border-radius:3px;
+                     background:${ESTADOS[e].c};margin-right:8px;"></i>
+                  <strong>${ESTADOS[e].t}</strong>
+                  <span style="color:var(--muted-2);font-size:11.5px;"> · ${ESTADOS[e].d}</span></td>
+                <td class="n">${x.n}</td>
+                <td class="n">${(x.n/totalCanc*100).toFixed(1)}%</td>
+                <td class="n">${Math.round(x.horas_perdidas||0)}</td>
+                <td class="n">${eur(x.eur_devuelto)}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Dónde se pierden las horas</h3>
+        <p class="note">Porcentaje de cancelaciones que acaban con la pista vacía, por franja.</p>
+        ${barras(d.cancelaciones.por_hora.filter(h=>h.canc>=3)
+            .map(h=>({...h, v: h.canc? h.vacias/h.canc*100 : 0})), {
+          max:100,
+          color:(f)=> f.v>=60 ? 'var(--s2)' : f.v>=30 ? 'var(--s4)' : 'var(--s3)',
+          etiq:(f)=> String(f.hora).padStart(2,'0')+'h',
+          fmt:(f)=> f.v.toFixed(0)+'% · '+f.vacias+'/'+f.canc})}
+        <p class="note" style="margin:14px 0 0 0;">
+          Una franja con mucha demanda revende el hueco sola; una franja vacía, no.</p>
+      </div>
+
+      <div class="card">
+        <h3>Cancelaciones por tipo de reserva</h3>
+        <table class="det-tabla">
+          <thead><tr><th>Tipo</th><th class="n">Canceladas</th>
+            <th class="n">Quedan vacías</th><th class="n">Horas perdidas</th></tr></thead>
+          <tbody>${d.cancelaciones.por_tipo.map(t=>`
+            <tr><td>${({REGULAR_BOOKING:'Reserva normal',RECURRING_BOOKING:'Recurrente',
+                        COURSE_CLASS:'Clase de curso',PRIVATE_CLASS:'Clase particular',
+                        OPEN_MATCH:'Partida abierta'})[t.tipo] || t.tipo}</td>
+              <td class="n">${t.canc}</td>
+              <td class="n">${t.vacias} (${t.canc?Math.round(t.vacias/t.canc*100):0}%)</td>
+              <td class="n">${Math.round(t.horas_perdidas||0)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  async function abrirDetalle(){
+    const desde = det.ancla;
+    const hasta = addMeses(desde, LONGITUD[det.periodo]);
+    det.titulo.innerHTML = 'Informe <em>Campus Pádel</em>';
+    det.label.textContent = etiqueta(desde, det.periodo);
+    det.body.innerHTML = '<div class="card"><p class="vacio">Cargando…</p></div>';
+    det.el.hidden = false;
+    document.body.style.overflow = 'hidden';
+
+    document.getElementById('det-prev').disabled = desde <= EJ_INI;
+    document.getElementById('det-next').disabled = hasta >= EJ_FIN;
+
+    try{
+      const r = await fetch(`/api/periodo?from=${desde}&to=${hasta}`);
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      render(await r.json());
+    }catch(err){
+      det.body.innerHTML = `<div class="card"><p class="vacio">No se pudo cargar: ${err.message}</p></div>`;
+    }
+  }
+
+  function cerrarDetalle(){
+    det.el.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  tbody.addEventListener('click', (e)=>{
+    const b = e.target.closest('.rep-btn');
+    if(!b) return;
+    det.periodo = 'mes';
+    det.el.querySelectorAll('.seg button').forEach(x=>
+      x.setAttribute('aria-pressed', String(x.dataset.per === 'mes')));
+    det.ancla = b.dataset.mes;
+    abrirDetalle();
+  });
+
+  document.getElementById('det-close').addEventListener('click', cerrarDetalle);
+  det.el.addEventListener('click', (e)=>{ if(e.target === det.el) cerrarDetalle(); });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && !det.el.hidden) cerrarDetalle();
+  });
+
+  det.el.querySelectorAll('.seg button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      det.periodo = btn.dataset.per;
+      det.el.querySelectorAll('.seg button').forEach(x=>
+        x.setAttribute('aria-pressed', String(x === btn)));
+      det.ancla = alinear(det.ancla, det.periodo);
+      abrirDetalle();
+    });
+  });
+
+  document.getElementById('det-prev').addEventListener('click', ()=>{
+    det.ancla = addMeses(det.ancla, -LONGITUD[det.periodo]);
+    abrirDetalle();
+  });
+  document.getElementById('det-next').addEventListener('click', ()=>{
+    det.ancla = addMeses(det.ancla, LONGITUD[det.periodo]);
+    abrirDetalle();
+  });
 
   buildTable();
   refreshAllCells();
