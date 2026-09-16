@@ -180,6 +180,48 @@
   }
   .reg-tag.pending{ color:var(--fuchsia); }
 
+  .fuente{
+    display:block; margin-top:4px;
+    font-family:'Inter',sans-serif; font-size:10px; letter-spacing:.2px;
+    text-align:right; white-space:nowrap; color:var(--muted-2);
+  }
+  .fuente.auto{ color:var(--court); }
+  .fuente.manual{ color:var(--gold); }
+
+  .panel{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:16px; padding:22px 24px; margin-bottom:26px;
+  }
+  .panel h2{
+    font-family:'Oswald',sans-serif; font-weight:600; font-size:17px;
+    margin:0 0 4px 0; letter-spacing:.02em;
+  }
+  .panel .sub{ font-size:12.5px; color:var(--muted); margin:0 0 20px 0; }
+
+  .occ-row{ display:flex; align-items:center; gap:10px; margin-bottom:5px; }
+  .occ-hora{
+    width:38px; text-align:right; flex-shrink:0;
+    font-family:'Space Mono',monospace; font-size:11.5px; color:var(--muted);
+  }
+  .occ-track{
+    flex:1; height:16px; background:var(--surface-2);
+    border-radius:4px; overflow:hidden; display:block;
+  }
+  /* display:block es obligatorio: en un span inline, height:100% no aplica
+     y la barra queda invisible. */
+  .occ-fill{ display:block; height:100%; border-radius:4px; transition:width .4s ease; }
+  .occ-pct{
+    width:46px; flex-shrink:0;
+    font-family:'Space Mono',monospace; font-size:11.5px; color:var(--muted);
+  }
+  .occ-legend{ margin-top:14px; font-size:11.5px; color:var(--muted-2); }
+
+  .sync-tag{
+    font-family:'Inter',sans-serif; font-size:11.5px; color:var(--muted-2);
+    margin-top:14px; display:block;
+  }
+  .sync-tag.error{ color:var(--fuchsia); }
+
   .th-hint{
     display:block; margin-top:3px;
     font-weight:400; font-size:10.5px; color:var(--muted-2);
@@ -403,6 +445,24 @@
       </tfoot>
     </table>
   </div>
+
+  <div class="panel" id="panel-ocupacion" hidden>
+    <h2>Ocupación por franja</h2>
+    <p class="sub" id="occ-sub">—</p>
+    <div id="occ-chart"></div>
+    <p class="occ-legend">
+      Porcentaje de horas-pista vendidas sobre las disponibles
+      (pistas activas × días con actividad).
+    </p>
+  </div>
+
+  <div class="panel" id="panel-cancelaciones" hidden>
+    <h2>Cancelaciones</h2>
+    <p class="sub">Separadas por quién cancela: el jugador o el propio club.</p>
+    <div id="canc-body"></div>
+  </div>
+
+  <span class="sync-tag" id="sync-tag"></span>
 
   <button class="reset-btn" id="reset-btn" type="button">Restablecer facturación registrada</button>
 
@@ -727,9 +787,124 @@
     }
   });
 
+  // ---------- Datos reales desde /api/metrics ----------
+  // Playtomic manda; el registro manual solo corrige lo que haga falta.
+  const MES_KEY = {'09':'sep26','10':'oct26','11':'nov26','12':'dic26',
+                   '01':'ene27','02':'feb27','03':'mar27','04':'abr27',
+                   '05':'may27','06':'jun27','07':'jul27','08':'ago27'};
+
+  function pintarFuente(key, info){
+    const el = document.getElementById('tag-' + key);
+    if(!el || !info) return;
+    el.className = 'fuente ' + (info.es_manual ? 'manual' : 'auto');
+    el.textContent = info.es_manual
+      ? 'ajuste manual'
+      : `Playtomic · ${info.reservas} reservas`;
+  }
+
+  function pintarOcupacion(filas, mesRef){
+    const panel = document.getElementById('panel-ocupacion');
+    const delMes = filas.filter(f => f.month === mesRef);
+    if(!delMes.length) return;
+
+    const cont = document.getElementById('occ-chart');
+    cont.innerHTML = '';
+    const [y, m] = mesRef.split('-');
+    document.getElementById('occ-sub').textContent =
+      `${['','enero','febrero','marzo','abril','mayo','junio','julio',
+          'agosto','septiembre','octubre','noviembre','diciembre'][+m]} de ${y}`;
+
+    delMes.forEach(f => {
+      const pct = f.ocupacion_pct ?? 0;
+      // Verde cuando la franja rinde, fucsia cuando esta muerta.
+      const color = pct >= 50 ? 'var(--court)' : pct >= 25 ? 'var(--gold)' : 'var(--fuchsia)';
+      const row = document.createElement('div');
+      row.className = 'occ-row';
+      row.innerHTML = `
+        <span class="occ-hora">${String(f.hora).padStart(2,'0')}h</span>
+        <span class="occ-track"><span class="occ-fill"
+              style="width:${Math.min(pct,100)}%;background:${color}"></span></span>
+        <span class="occ-pct">${pct.toFixed(0)}%</span>`;
+      cont.appendChild(row);
+    });
+    panel.hidden = false;
+  }
+
+  function pintarCancelaciones(filas){
+    if(!filas || !filas.length) return;
+    const pc = (c, t) => t > 0 ? (100*c/t).toFixed(1) + '%' : '—';
+    const cuerpo = document.getElementById('canc-body');
+    cuerpo.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr>
+          <th style="text-align:left;padding:6px 0;color:var(--muted);font-size:11px;">Mes</th>
+          <th style="text-align:right;padding:6px 0;color:var(--muted);font-size:11px;">Jugador</th>
+          <th style="text-align:right;padding:6px 0;color:var(--muted);font-size:11px;">Club</th>
+        </tr></thead>
+        <tbody>${filas.map(f => `
+          <tr>
+            <td style="padding:6px 0;border-top:1px solid var(--line);">${f.month.slice(0,7)}</td>
+            <td style="padding:6px 0;border-top:1px solid var(--line);text-align:right;
+                       font-family:'Space Mono',monospace;color:var(--court);">
+              ${pc(f.jugador_canc, f.jugador_total)}
+              <span style="color:var(--muted-2);font-size:11px;"> (${f.jugador_canc}/${f.jugador_total})</span>
+            </td>
+            <td style="padding:6px 0;border-top:1px solid var(--line);text-align:right;
+                       font-family:'Space Mono',monospace;color:var(--muted);">
+              ${pc(f.club_canc, f.club_total)}
+              <span style="color:var(--muted-2);font-size:11px;"> (${f.club_canc}/${f.club_total})</span>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+    document.getElementById('panel-cancelaciones').hidden = false;
+  }
+
+  async function cargarDatos(){
+    const tag = document.getElementById('sync-tag');
+    try{
+      const res = await fetch('/api/metrics');
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const d = await res.json();
+
+      // Vuelca la facturacion de Playtomic en los inputs, salvo los meses
+      // con ajuste manual, que mandan sobre lo calculado.
+      let ultimoConDatos = null;
+      d.meses.forEach(m => {
+        const key = MES_KEY[m.month.slice(5,7)];
+        if(!key || m.real == null) return;
+        ultimoConDatos = m.month;
+        const input = tbody.querySelector(`input[data-key="${key}"]`);
+        if(input && !m.es_manual){
+          input.value = Number(m.real).toFixed(2);
+          data[key] = {v:String(m.real), ts:null};
+        }
+        pintarFuente(key, m);
+      });
+
+      recalc();
+      if(ultimoConDatos) pintarOcupacion(d.ocupacion, ultimoConDatos);
+      pintarCancelaciones(d.cancelaciones);
+
+      const s = d.ultima_sync;
+      tag.className = 'sync-tag' + (s && s.ok === false ? ' error' : '');
+      tag.textContent = s
+        ? (s.ok === false
+            ? `Última sincronización con error: ${s.error}`
+            : `Última sincronización: ${new Date(s.finished_at || s.started_at)
+                .toLocaleString('es-ES')} · ${s.upserted} reservas`)
+        : 'Sin sincronizaciones registradas todavía.';
+    }catch(err){
+      // Sin API se sigue pudiendo usar el registro manual del navegador.
+      tag.className = 'sync-tag error';
+      tag.textContent = 'No se pudieron cargar los datos de Playtomic: ' + err.message;
+    }
+  }
+
   buildTable();
   refreshAllCells();
   recalc();
+  cargarDatos();
 })();
 </script>
 </body>

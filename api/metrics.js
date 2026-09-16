@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   try {
     const sql = getSql();
 
-    const [meses, ocupacion, pistas, ultimaSync] = await Promise.all([
+    const [meses, ocupacion, pistas, cancelaciones, ultimaSync] = await Promise.all([
       // Objetivo + facturacion + ajuste manual, mes a mes.
       sql.query(`
         SELECT
@@ -18,6 +18,8 @@ export default async function handler(req, res) {
           r.marketplace::float8                              AS marketplace,
           r.reservas::int                                    AS reservas,
           r.jugadores::int                                   AS jugadores,
+          r.cobrado::float8                                  AS cobrado,
+          r.pendiente_cobro::float8                          AS pendiente,
           (o.amount IS NOT NULL)                             AS es_manual,
           o.note                                             AS nota
         FROM targets t
@@ -33,6 +35,17 @@ export default async function handler(req, res) {
         FROM occupancy_by_slot ORDER BY month, hora
       `),
       sql.query(`SELECT resource_id, resource_name, active FROM courts ORDER BY resource_name`),
+      // Cancelaciones separando al jugador del propio club: mezclarlas
+      // da un 33% que no significa nada.
+      sql.query(`
+        SELECT
+          date_trunc('month', start_at AT TIME ZONE 'Europe/Madrid')::date::text AS month,
+          COUNT(*) FILTER (WHERE origin NOT IN ('MANAGER','PLAYTOMIC_MANAGER','IMPORTED'))::int AS jugador_total,
+          COUNT(*) FILTER (WHERE origin NOT IN ('MANAGER','PLAYTOMIC_MANAGER','IMPORTED') AND is_canceled)::int AS jugador_canc,
+          COUNT(*) FILTER (WHERE origin IN ('MANAGER','PLAYTOMIC_MANAGER','IMPORTED'))::int AS club_total,
+          COUNT(*) FILTER (WHERE origin IN ('MANAGER','PLAYTOMIC_MANAGER','IMPORTED') AND is_canceled)::int AS club_canc
+        FROM bookings GROUP BY 1 ORDER BY 1
+      `),
       sql.query(`
         SELECT started_at, finished_at, fetched, upserted, ok, error
         FROM sync_log ORDER BY id DESC LIMIT 1
@@ -44,6 +57,7 @@ export default async function handler(req, res) {
       meses,
       ocupacion,
       pistas,
+      cancelaciones,
       ultima_sync: ultimaSync[0] ?? null,
     });
   } catch (err) {
