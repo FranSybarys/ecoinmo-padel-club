@@ -223,16 +223,29 @@
   .sync-tag.error{ color:var(--fuchsia); }
 
   /* ---------- Botón de informe por mes ---------- */
+  /* El icono suelto en la última columna no se veía: gris sobre negro y
+     fuera de pantalla por debajo de 820px. Ahora va junto al mes, con
+     etiqueta y en color de marca. */
+  /* Verde #22b581: 6,99:1 sobre la superficie, muy por encima del
+     4,5:1 que exige texto. El gris anterior pasaba por desactivado. */
   .rep-btn{
-    background:none; border:1px solid var(--line); color:var(--muted-2);
-    width:30px; height:30px; padding:0; border-radius:8px; cursor:pointer;
-    display:inline-flex; align-items:center; justify-content:center;
-    transition:border-color .15s ease, color .15s ease;
+    margin-left:10px; flex-shrink:0;
+    background:rgba(34,181,129,0.14);
+    border:1px solid #22b581;
+    color:#2ecc8f;
+    padding:6px 13px 6px 10px; border-radius:100px; cursor:pointer;
+    display:inline-flex; align-items:center; gap:7px;
+    font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600;
+    letter-spacing:.01em;
+    transition:background .15s ease, color .15s ease, transform .1s ease;
   }
-  .rep-btn:hover{ border-color:var(--fuchsia); color:var(--fuchsia); }
-  .rep-btn svg{ width:15px; height:15px; display:block; }
-  .rep-btn[disabled]{ opacity:.25; cursor:default; }
-  .rep-btn[disabled]:hover{ border-color:var(--line); color:var(--muted-2); }
+  .rep-btn:hover{ background:#22b581; color:#06120d; transform:translateY(-1px); }
+  .rep-btn:active{ transform:none; }
+  .rep-btn svg{ width:18px; height:18px; display:block; }
+  @media (max-width:900px){
+    .rep-btn{ padding:6px 10px; }
+    .rep-txt{ display:none; }   /* solo el icono cuando no hay sitio */
+  }
 
   /* ---------- Panel de detalle ---------- */
   #detalle{
@@ -550,7 +563,6 @@
           <th class="num">Diferencia</th>
           <th class="num">Comisión</th>
           <th style="width:110px;">Progreso</th>
-          <th style="width:44px;"><span class="sr-only">Informe</span></th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -561,7 +573,6 @@
           <td class="num" id="foot-actual">–</td>
           <td class="num" id="foot-diff">–</td>
           <td class="num" id="foot-commission">–</td>
-          <td></td>
           <td></td>
         </tr>
       </tfoot>
@@ -695,7 +706,7 @@
     {key:'ago27', name:'Agosto',     year:'2027', target:7331.75, iso:'2027-08-01'},
   ];
   const STORAGE_KEY = 'pts_objetivos_2026_2027_v1';
-  const ICON_CHART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>';
+  const ICON_CHART = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1.2"/><rect x="10" y="6" width="4" height="15" rx="1.2"/><rect x="17" y="9" width="4" height="12" rx="1.2"/></svg>';
   const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>';
   const ANNUAL_BONUS = 1000;
 
@@ -763,6 +774,10 @@
             <span class="status-dot" id="dot-${m.key}"></span>
             <span class="month-name">${m.name}</span>
             <span class="month-year">'${m.year.slice(-2)}</span>
+            <button type="button" class="rep-btn" data-mes="${m.iso}"
+                    title="Ver informe de ${m.name} ${m.year}">
+              ${ICON_CHART}<span class="rep-txt">Informe</span>
+            </button>
           </div>
         </td>
         <td class="num">${fmt(m.target)}</td>
@@ -779,11 +794,7 @@
         </td>
         <td class="num diff" id="diff-${m.key}">—</td>
         <td class="num comm-cell zero" id="comm-${m.key}">—</td>
-        <td style="width:44px;">
-          <button type="button" class="rep-btn" data-mes="${m.iso}"
-                  title="Ver informe de ${m.name} ${m.year}"
-                  aria-label="Ver informe de ${m.name} ${m.year}">${ICON_CHART}</button>
-        </td>
+
         <td>
           <div class="bar-track"><div class="bar-fill" id="bar-${m.key}" style="width:0%"></div></div>
         </td>
