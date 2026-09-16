@@ -74,20 +74,28 @@ CREATE TABLE IF NOT EXISTS sync_log (
 
 -- Facturacion mensual, separando directa de marketplace.
 -- Se excluyen canceladas y no cobradas.
+-- Canales por los que entra una reserva. Verificado contra datos reales
+-- del club: el origen no es un binario manager/marketplace.
+--   MANAGER, PLAYTOMIC_MANAGER -> la crea el club (mostrador, telefono)
+--   APP_IOS, APP_ANDROID, WEB_* -> la crea el jugador desde Playtomic
 CREATE OR REPLACE VIEW monthly_revenue AS
 SELECT
   -- La zona se fija explicitamente: si no, el mes dependeria del
   -- TimeZone de la conexion y una reserva de las 00:30 podria caer
   -- en el mes anterior.
   date_trunc('month', start_at AT TIME ZONE 'Europe/Madrid')::date AS month,
-  SUM(price_amount)                                        AS total,
-  SUM(price_amount) FILTER (WHERE origin = 'PLAYTOMIC_MANAGER') AS directa,
-  SUM(price_amount) FILTER (WHERE origin <> 'PLAYTOMIC_MANAGER') AS marketplace,
-  COUNT(*)                                                 AS reservas,
-  COUNT(DISTINCT owner_id)                                 AS jugadores
+  SUM(price_amount)                                           AS total,
+  SUM(price_amount) FILTER (WHERE origin IN ('MANAGER','PLAYTOMIC_MANAGER'))     AS directa,
+  SUM(price_amount) FILTER (WHERE origin NOT IN ('MANAGER','PLAYTOMIC_MANAGER')) AS marketplace,
+  COUNT(*)                                                    AS reservas,
+  COUNT(DISTINCT owner_id)                                    AS jugadores,
+  -- Cobrado de verdad frente a lo solo comprometido.
+  SUM(price_amount) FILTER (WHERE payment_status = 'PAID')    AS cobrado,
+  SUM(price_amount) FILTER (WHERE payment_status IN ('PENDING','UNPAID')) AS pendiente_cobro
 FROM bookings
 WHERE NOT is_canceled
-  AND payment_status IN ('PAID', 'PARTIAL_PAID')
+  -- VOID son reservas anuladas sin cargo: no son facturacion.
+  AND payment_status IN ('PAID', 'PARTIAL_PAID', 'PENDING', 'UNPAID')
 GROUP BY 1;
 
 -- Ocupacion por mes y franja horaria.

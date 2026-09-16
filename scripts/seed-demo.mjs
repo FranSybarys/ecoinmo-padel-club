@@ -8,7 +8,11 @@ const sql = neon(process.env.DATABASE_URL);
 
 if (process.argv.includes('--clean')) {
   await sql.query(`DELETE FROM bookings WHERE booking_id LIKE 'demo-%'`);
-  console.log('Datos de demostración borrados.');
+  // Las pistas reales llevan UUID; las simuladas, un slug. Si no se
+  // borran, inflan el denominador de la ocupacion.
+  await sql.query(
+    `DELETE FROM courts WHERE resource_id !~ '^[0-9a-f-]{36}$'`);
+  console.log('Datos de demostración borrados (reservas y pistas).');
   process.exit(0);
 }
 
@@ -80,7 +84,8 @@ for (let i = 0; i < filas.length; i += LOTE) {
 
 await sql.query(
   `INSERT INTO courts (resource_id, resource_name)
-   SELECT DISTINCT resource_id, resource_name FROM bookings WHERE resource_id IS NOT NULL
+   SELECT DISTINCT ON (resource_id) resource_id, resource_name FROM bookings
+   WHERE resource_id IS NOT NULL ORDER BY resource_id, start_at DESC
    ON CONFLICT (resource_id) DO UPDATE SET resource_name = EXCLUDED.resource_name`
 );
 
