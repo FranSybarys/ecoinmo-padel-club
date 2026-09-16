@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acceso · Campus Pádel Club</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0b0c; --surface:#151417; --line:#2c2a2f;
+    --fuchsia:#e6007e; --verde:#22b581;
+    --text:#f5f4f2; --muted:#948f96; --muted-2:#615d63;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:34px; padding:24px;
+  }
+  h1{
+    font-family:'Oswald',sans-serif; font-weight:700;
+    font-size:clamp(28px,7.5vw,68px); letter-spacing:.06em;
+    line-height:1.05; text-align:center; margin:0;
+  }
+  h1 em{ font-style:normal; color:var(--fuchsia); }
+  form{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  input{
+    width:min(78vw,300px);
+    background:var(--surface); border:1px solid var(--line); color:var(--text);
+    font-family:'Space Mono',monospace; font-size:15px;
+    padding:14px 18px; border-radius:10px; text-align:center;
+  }
+  input:focus{ outline:none; border-color:var(--fuchsia); }
+  input::placeholder{ color:var(--muted-2); }
+  button{
+    background:var(--verde); border:none; color:#06120d;
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:15px;
+    letter-spacing:.04em; padding:14px 26px; border-radius:10px; cursor:pointer;
+  }
+  button:hover:not(:disabled){ background:#2ecc8f; }
+  button:disabled{ opacity:.5; cursor:default; }
+  .msg{
+    min-height:22px; font-size:13.5px; text-align:center;
+    max-width:420px; margin:0; color:var(--muted);
+  }
+  .msg.ok{ color:var(--verde); }
+  .msg.err{ color:var(--fuchsia); }
+  .pie{ font-size:12px; color:var(--muted-2); text-align:center; max-width:380px; }
+  :focus-visible{ outline:2px solid var(--fuchsia); outline-offset:2px; }
+</style>
+</head>
+<body>
+
+<h1>CAMPUS <em>PADEL</em> CLUB</h1>
+
+<form id="f" autocomplete="on">
+  <input type="email" id="email" name="email" required
+         placeholder="tu@ecoinmo.com" aria-label="Correo electrónico"
+         autocomplete="email" autocapitalize="off" spellcheck="false">
+  <button type="submit" id="b">Enviar enlace</button>
+</form>
+
+<p class="msg" id="m" role="status"></p>
+<p class="pie">Te enviamos un enlace de acceso al correo. Caduca en 15 minutos.</p>
+
+<script>
+(function(){
+  const f = document.getElementById('f');
+  const b = document.getElementById('b');
+  const m = document.getElementById('m');
+  const e = document.getElementById('email');
+
+  f.addEventListener('submit', async (ev)=>{
+    ev.preventDefault();
+    const email = e.value.trim();
+    if(!email) return;
+
+    b.disabled = true;
+    m.className = 'msg';
+    m.textContent = 'Enviando…';
+
+    try{
+      const r = await fetch('/api/auth/solicitar', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email }),
+      });
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      // Respuesta deliberadamente igual para todos: no revelamos si el
+      // correo pertenece al dominio autorizado.
+      m.className = 'msg ok';
+      m.textContent = 'Si la dirección está autorizada, recibirás el enlace en unos segundos. Revisa también el correo no deseado.';
+      f.reset();
+    }catch(err){
+      m.className = 'msg err';
+      m.textContent = 'No se pudo enviar. Inténtalo de nuevo en un momento.';
+    }finally{
+      setTimeout(()=>{ b.disabled = false; }, 4000);
+    }
+  });
+
+  e.focus();
+})();
+</script>
+</body>
+</html>

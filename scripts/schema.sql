@@ -146,3 +146,29 @@ SELECT
 FROM vendidas v
 JOIN dias_abiertos d ON d.month = v.month
 CROSS JOIN capacidad c;
+
+-- ---------------------------------------------------------------
+-- Acceso por enlace magico
+-- ---------------------------------------------------------------
+
+-- Token de un solo uso enviado por correo. Se guarda el hash, nunca
+-- el token en claro: si alguien lee la tabla, no puede entrar con el.
+CREATE TABLE IF NOT EXISTS auth_tokens (
+  token_hash  TEXT PRIMARY KEY,
+  email       TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used_at     TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_exp ON auth_tokens (expires_at);
+
+-- Quien entra y cuando. Sirve para auditar, no para autenticar.
+CREATE TABLE IF NOT EXISTS auth_log (
+  id      BIGSERIAL PRIMARY KEY,
+  email   TEXT,
+  accion  TEXT NOT NULL,      -- solicitud | entrada | rechazo | salida
+  detalle TEXT,
+  ip      TEXT,
+  at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_auth_log_at ON auth_log (at DESC);
