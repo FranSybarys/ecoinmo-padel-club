@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Objetivos 2026-2027 · PTS Campus Pádel Club</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0b0c;
+    --surface:#151417;
+    --surface-2:#1c1b1f;
+    --line:#2c2a2f;
+    --fuchsia:#e6007e;
+    --fuchsia-dim:#7a1350;
+    --gold:#ffd400;
+    --text:#f5f4f2;
+    --muted:#948f96;
+    --muted-2:#615d63;
+    --court:#2f8f6b;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#0b0b0c; --surface:#151417; --surface-2:#1c1b1f; --line:#2c2a2f;
+      --text:#f5f4f2; --muted:#948f96; --muted-2:#615d63;
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    padding:clamp(20px,4vw,56px);
+  }
+  .wrap{ max-width:1180px; margin:0 auto; }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    gap:24px; flex-wrap:wrap;
+    padding-bottom:28px; margin-bottom:32px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand{ display:flex; align-items:center; gap:14px; }
+  .brand-mark{
+    width:46px; height:46px; border-radius:50%;
+    background:var(--fuchsia);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:15px; letter-spacing:0.5px;
+    color:#0b0b0c; flex-shrink:0;
+  }
+  .brand-text .club{ font-size:13px; color:var(--muted); letter-spacing:0.4px; }
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:clamp(28px,4vw,42px);
+    line-height:1.05;
+    margin:4px 0 0 0;
+    letter-spacing:0.2px;
+  }
+  h1 em{ font-style:normal; color:var(--fuchsia); }
+  .fiscal-tag{
+    font-family:'Space Mono',monospace;
+    font-size:13px; color:var(--muted);
+    border:1px solid var(--line);
+    padding:7px 14px; border-radius:100px;
+    white-space:nowrap;
+  }
+
+  /* ---------- KPI row ---------- */
+  .kpis{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+    margin-bottom:38px;
+  }
+  .kpi{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 22px;
+    position:relative;
+    overflow:hidden;
+  }
+  .kpi.accent{ border-color:var(--fuchsia-dim); background:linear-gradient(160deg,var(--surface) 60%, #240418 140%); }
+  .kpi .label{
+    font-size:12.5px; color:var(--muted); font-weight:500;
+    text-transform:none; margin-bottom:10px; display:block;
+  }
+  .kpi .value{
+    font-family:'Oswald',sans-serif; font-weight:600;
+    font-size:clamp(22px,2.4vw,30px);
+    font-variant-numeric:tabular-nums;
+  }
+  .kpi .value small{ font-size:15px; color:var(--muted); font-family:'Inter',sans-serif; font-weight:500; }
+  .kpi .sub{ margin-top:6px; font-size:12.5px; color:var(--muted-2); }
+  .kpi .sub.positive{ color:var(--gold); }
+
+  /* ---------- Table ---------- */
+  .board{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    margin-bottom:26px;
+  }
+  table{ width:100%; border-collapse:collapse; }
+  thead th{
+    text-align:left;
+    font-size:11.5px;
+    color:var(--muted);
+    font-weight:600;
+    padding:16px 18px 12px 18px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  thead th.num, td.num{ text-align:right; }
+  tbody td{
+    padding:13px 18px;
+    border-bottom:1px solid var(--line);
+    font-size:14.5px;
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr.current-month{ background:rgba(230,0,126,0.06); }
+  .month-cell{ display:flex; align-items:center; gap:10px; }
+  .month-name{ font-weight:600; }
+  .month-year{ font-family:'Space Mono',monospace; font-size:11px; color:var(--muted-2); }
+  td.num, th.num{ font-family:'Space Mono',monospace; font-variant-numeric:tabular-nums; }
+
+  .real-input{
+    width:118px;
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:'Space Mono',monospace;
+    font-size:14px;
+    padding:7px 9px;
+    border-radius:8px;
+    text-align:right;
+    transition:border-color .15s ease;
+  }
+  .real-input:focus{ outline:none; border-color:var(--fuchsia); }
+  .real-input::placeholder{ color:var(--muted-2); }
+
+  .diff.pos{ color:var(--gold); }
+  .diff.neg{ color:var(--muted); }
+
+  .status-dot{
+    width:9px; height:9px; border-radius:50%;
+    display:inline-block; flex-shrink:0;
+    background:var(--muted-2);
+  }
+  .status-dot.hit{ background:var(--gold); box-shadow:0 0 0 3px rgba(255,212,0,0.15); }
+
+  .bar-track{
+    width:100%; height:5px; border-radius:100px;
+    background:var(--surface-2); overflow:hidden; margin-top:6px;
+  }
+  .bar-fill{
+    height:100%; background:var(--muted-2); border-radius:100px;
+    transition:width .3s ease, background .3s ease;
+  }
+  .bar-fill.hit{ background:var(--gold); }
+
+  .comm-cell{ font-weight:600; }
+  .comm-cell.zero{ color:var(--muted-2); font-weight:400; }
+  .comm-cell.paid{ color:var(--gold); }
+
+  tfoot td{
+    padding:16px 18px;
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:15.5px;
+    border-top:2px solid var(--line);
+    background:var(--surface-2);
+  }
+  tfoot td.num{ font-family:'Space Mono',monospace; font-variant-numeric:tabular-nums; }
+  tfoot .foot-label{ font-family:'Inter',sans-serif; font-weight:600; font-size:13px; color:var(--muted); }
+
+  .rules-panel{
+    background:linear-gradient(135deg, rgba(230,0,126,0.10), rgba(255,212,0,0.06));
+    border:1px solid var(--fuchsia-dim);
+    border-radius:14px;
+    padding:18px 22px;
+    margin-bottom:24px;
+    font-size:13.5px; line-height:1.65; color:var(--text);
+    display:flex; gap:16px; align-items:flex-start;
+  }
+  .rules-panel .icon{
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:12px;
+    color:var(--gold); border:1px solid var(--gold); border-radius:100px;
+    padding:3px 10px; white-space:nowrap; flex-shrink:0; margin-top:2px;
+  }
+  .rules-panel p{ margin:0; color:var(--muted); }
+  .rules-panel strong{ color:var(--text); font-weight:600; }
+  .rules-panel .bonus-line{ display:block; margin-top:6px; color:var(--gold); font-weight:500; }
+
+  /* ---------- Footnote ---------- */
+  .footnote{
+    font-size:12.5px; line-height:1.65; color:var(--muted);
+    border-top:1px solid var(--line);
+    padding-top:18px;
+    max-width:820px;
+  }
+  .footnote strong{ color:var(--text); font-weight:600; }
+  .footnote .bonus-line{ margin-top:8px; color:var(--gold); font-weight:500; }
+
+  .reset-btn{
+    background:none; border:1px solid var(--line); color:var(--muted);
+    font-family:'Inter',sans-serif; font-size:12.5px; padding:8px 14px;
+    border-radius:100px; cursor:pointer; margin-top:22px;
+  }
+  .reset-btn:hover{ border-color:var(--fuchsia); color:var(--text); }
+
+  @media (max-width:820px){
+    .kpis{ grid-template-columns:repeat(2,1fr); }
+    .board{ overflow-x:auto; }
+    table{ min-width:720px; }
+  }
+  @media (max-width:520px){
+    .kpis{ grid-template-columns:1fr 1fr; }
+    header{ flex-direction:column; align-items:flex-start; }
+  }
+
+  :focus-visible{ outline:2px solid var(--fuchsia); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">PTS</div>
+      <div class="brand-text">
+        <div class="club">Campus Pádel Club</div>
+        <h1>Objetivos <em>2026–2027</em></h1>
+      </div>
+    </div>
+    <div class="fiscal-tag">Ejercicio Sep 2026 → Ago 2027</div>
+  </header>
+
+  <div class="rules-panel">
+    <span class="icon">Comisión</span>
+    <p>
+      <strong>Comisión de productividad:</strong> los meses en los que la facturación real alcance o supere el objetivo mensual, se libera una comisión de <strong>200&nbsp;€ + el 10% del importe facturado por encima del objetivo</strong>.
+      <span class="bonus-line">Si al finalizar el ejercicio (agosto 2027) la facturación acumulada alcanza el objetivo anual, se suman <strong>1.000&nbsp;€ adicionales</strong> de productividad.</span>
+    </p>
+  </div>
+
+  <section class="kpis">
+    <div class="kpi">
+      <span class="label">Objetivo anual</span>
+      <div class="value" id="kpi-target">–</div>
+    </div>
+    <div class="kpi accent">
+      <span class="label">Facturación acumulada</span>
+      <div class="value" id="kpi-actual">–</div>
+      <div class="sub" id="kpi-actual-sub">0% del objetivo</div>
+    </div>
+    <div class="kpi">
+      <span class="label">Meses en objetivo</span>
+      <div class="value" id="kpi-hits">0 <small>/ 12</small></div>
+    </div>
+    <div class="kpi">
+      <span class="label">Comisión de productividad</span>
+      <div class="value" id="kpi-commission">0 €</div>
+      <div class="sub" id="kpi-commission-sub">mensual acumulada</div>
+    </div>
+  </section>
+
+  <div class="board">
+    <table>
+      <thead>
+        <tr>
+          <th>Mes</th>
+          <th class="num">Objetivo</th>
+          <th class="num">Facturación real</th>
+          <th class="num">Diferencia</th>
+          <th class="num">Comisión</th>
+          <th style="width:110px;">Progreso</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+      <tfoot>
+        <tr>
+          <td><span class="foot-label">TOTAL</span></td>
+          <td class="num" id="foot-target">–</td>
+          <td class="num" id="foot-actual">–</td>
+          <td class="num" id="foot-diff">–</td>
+          <td class="num" id="foot-commission">–</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <button class="reset-btn" id="reset-btn" type="button">Restablecer facturación introducida</button>
+
+</div>
+
+<script>
+(function(){
+  const MONTHS = [
+    {key:'sep26', name:'Septiembre', year:'2026', target:13100},
+    {key:'oct26', name:'Octubre',    year:'2026', target:14500},
+    {key:'nov26', name:'Noviembre',  year:'2026', target:13850},
+    {key:'dic26', name:'Diciembre',  year:'2026', target:5600},
+    {key:'ene27', name:'Enero',      year:'2027', target:19487},
+    {key:'feb27', name:'Febrero',    year:'2027', target:14316},
+    {key:'mar27', name:'Marzo',      year:'2027', target:13467},
+    {key:'abr27', name:'Abril',      year:'2027', target:15876},
+    {key:'may27', name:'Mayo',       year:'2027', target:18578},
+    {key:'jun27', name:'Junio',      year:'2027', target:15243},
+    {key:'jul27', name:'Julio',      year:'2027', target:12345},
+    {key:'ago27', name:'Agosto',     year:'2027', target:7331.75},
+  ];
+  const STORAGE_KEY = 'pts_objetivos_2026_2027_v1';
+  const ANNUAL_BONUS = 1000;
+
+  const fmt = (n) => n.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+  const fmtInt = (n) => n.toLocaleString('es-ES', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' €';
+
+  function loadData(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveData(data){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+    catch(e){ /* almacenamiento no disponible: se continua sin persistir */ }
+  }
+
+  let data = loadData();
+
+  const tbody = document.getElementById('tbody');
+
+  function monthCommission(target, actual){
+    if(actual >= target && actual > 0){
+      return 200 + 0.10*(actual-target);
+    }
+    return 0;
+  }
+
+  function isCurrentMonth(m){
+    const now = new Date();
+    const monthIdx = now.getMonth(); // 0=enero
+    const yearShort = String(now.getFullYear()).slice(-2);
+    const map = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const currentKey = map[monthIdx] + yearShort;
+    return m.key === currentKey;
+  }
+
+  // Construye la tabla UNA sola vez. Los <input> no se vuelven a crear nunca,
+  // asi que escribir no pierde el foco ni el cursor.
+  function buildTable(){
+    MONTHS.forEach(m=>{
+      const tr = document.createElement('tr');
+      if(isCurrentMonth(m)) tr.classList.add('current-month');
+      tr.innerHTML = `
+        <td>
+          <div class="month-cell">
+            <span class="status-dot" id="dot-${m.key}"></span>
+            <span class="month-name">${m.name}</span>
+            <span class="month-year">'${m.year.slice(-2)}</span>
+          </div>
+        </td>
+        <td class="num">${fmt(m.target)}</td>
+        <td class="num">
+          <input type="number" min="0" step="0.01" class="real-input" data-key="${m.key}"
+                 placeholder="0,00" value="${data[m.key] ?? ''}">
+        </td>
+        <td class="num diff" id="diff-${m.key}">—</td>
+        <td class="num comm-cell zero" id="comm-${m.key}">—</td>
+        <td>
+          <div class="bar-track"><div class="bar-fill" id="bar-${m.key}" style="width:0%"></div></div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Recalcula y actualiza SOLO los valores derivados (no toca los <input>).
+  function recalc(){
+    let sumTarget=0, sumActual=0, sumCommission=0, hits=0;
+
+    MONTHS.forEach(m=>{
+      const actual = parseFloat(data[m.key]) || 0;
+      sumTarget += m.target;
+      sumActual += actual;
+      const diff = actual - m.target;
+      const commission = monthCommission(m.target, actual);
+      sumCommission += commission;
+      const hit = actual >= m.target && actual>0;
+      if(hit) hits++;
+      const pct = m.target>0 ? Math.min((actual/m.target)*100,100) : 0;
+
+      const diffEl = document.getElementById(`diff-${m.key}`);
+      diffEl.textContent = actual>0 ? (diff>=0?'+':'') + fmt(diff) : '—';
+      diffEl.className = 'num diff ' + (diff>=0?'pos':'neg');
+
+      const commEl = document.getElementById(`comm-${m.key}`);
+      commEl.textContent = commission>0 ? fmt(commission) : '—';
+      commEl.className = 'num comm-cell ' + (commission>0?'paid':'zero');
+
+      document.getElementById(`bar-${m.key}`).style.width = pct + '%';
+      document.getElementById(`bar-${m.key}`).className = 'bar-fill' + (hit?' hit':'');
+      document.getElementById(`dot-${m.key}`).className = 'status-dot' + (hit?' hit':'');
+    });
+
+    document.getElementById('foot-target').textContent = fmt(sumTarget);
+    document.getElementById('foot-actual').textContent = fmt(sumActual);
+    const totalDiff = sumActual - sumTarget;
+    const footDiff = document.getElementById('foot-diff');
+    footDiff.textContent = (sumActual>0 ? (totalDiff>=0?'+':'') + fmt(totalDiff) : '—');
+    footDiff.style.color = totalDiff>=0 ? 'var(--gold)' : 'var(--muted)';
+
+    const annualBonusEarned = sumActual >= sumTarget && sumActual > 0;
+    const totalCommission = sumCommission + (annualBonusEarned ? ANNUAL_BONUS : 0);
+    document.getElementById('foot-commission').textContent = fmt(totalCommission);
+
+    document.getElementById('kpi-target').textContent = fmtInt(sumTarget);
+    document.getElementById('kpi-actual').textContent = fmtInt(sumActual);
+    const pctYear = sumTarget>0 ? ((sumActual/sumTarget)*100).toFixed(1) : '0.0';
+    document.getElementById('kpi-actual-sub').textContent = pctYear + '% del objetivo anual';
+    document.getElementById('kpi-hits').innerHTML = hits + ' <small>/ 12</small>';
+    document.getElementById('kpi-commission').textContent = fmt(totalCommission);
+    document.getElementById('kpi-commission-sub').textContent = annualBonusEarned
+      ? 'incluye 1.000 € de bonus anual'
+      : 'mensual acumulada (+1.000 € si se cumple el año)';
+  }
+
+  tbody.addEventListener('input', (e)=>{
+    if(e.target.classList.contains('real-input')){
+      const key = e.target.dataset.key;
+      const val = e.target.value;
+      if(val === ''){ delete data[key]; } else { data[key] = val; }
+      saveData(data);
+      recalc();
+    }
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', ()=>{
+    if(confirm('¿Borrar toda la facturación real introducida? Los objetivos no se modifican.')){
+      data = {};
+      saveData(data);
+      MONTHS.forEach(m=>{
+        const input = tbody.querySelector(`input[data-key="${m.key}"]`);
+        if(input) input.value = '';
+      });
+      recalc();
+    }
+  });
+
+  buildTable();
+  recalc();
+})();
+</script>
+</body>
+</html>
