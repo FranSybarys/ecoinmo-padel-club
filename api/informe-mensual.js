@@ -2,7 +2,10 @@
 // Se dispara el dia 2 de cada mes, cuando el mes anterior ya esta completo.
 import { datosMes, generarHTML } from '../lib/informe.mjs';
 
-const DESTINATARIOS = ['fran@ecoinmo.com', 'jesus@ecoinmo.com', 'maria@ecoinmo.com'];
+const DESTINATARIOS = [
+  'fran@ecoinmo.com', 'jesus@ecoinmo.com',
+  'maria@ecoinmo.com', 'paloma@ecoinmo.com',
+];
 const FROM = 'Campus Pádel Club <tech.reporting@ecoinmo.com>';
 const REPLY_TO = 'fran@ecoinmo.com';
 

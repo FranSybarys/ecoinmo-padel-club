@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   try {
     const sql = getSql();
 
-    const [meses, ocupacion, pistas, cancelaciones, ultimaSync] = await Promise.all([
+    const [meses, ocupacion, pistas, cobros, cancelaciones, ultimaSync] = await Promise.all([
       // Objetivo + facturacion + ajuste manual, mes a mes.
       sql.query(`
         SELECT
@@ -35,6 +35,17 @@ export default async function handler(req, res) {
         FROM occupancy_by_slot ORDER BY month, hora
       `),
       sql.query(`SELECT resource_id, resource_name, active FROM courts ORDER BY resource_name`),
+      // Cobros por mes. El endpoint de pagos de Playtomic guarda mucho
+      // mas historico que el de reservas, asi que hay meses con bruto
+      // cobrado pero sin ningun detalle de reservas.
+      sql.query(`
+        SELECT c.month::text AS month,
+               c.bruto::float8, c.comision::float8, c.comision_iva::float8,
+               c.pct_sobre_bruto::float8, c.pagos,
+               EXISTS (SELECT 1 FROM bookings b
+                 WHERE b.start_at >= c.month
+                   AND b.start_at < (c.month + INTERVAL '1 month')) AS hay_reservas
+        FROM monthly_commission c ORDER BY c.month`),
       // Cancelaciones separando al jugador del propio club: mezclarlas
       // da un 33% que no significa nada.
       sql.query(`
@@ -57,6 +68,7 @@ export default async function handler(req, res) {
       meses,
       ocupacion,
       pistas,
+      cobros,
       cancelaciones,
       ultima_sync: ultimaSync[0] ?? null,
     });

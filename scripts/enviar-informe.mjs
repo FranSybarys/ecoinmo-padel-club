@@ -15,7 +15,10 @@ const FROM = 'Campus Pádel Club <tech.reporting@ecoinmo.com>';
 // respuesta rebota. Reply-To la desvia a un buzon que si existe.
 const REPLY_TO = 'fran@ecoinmo.com';
 
-const SOCIOS = ['fran@ecoinmo.com', 'jesus@ecoinmo.com', 'maria@ecoinmo.com'];
+const SOCIOS = [
+  'fran@ecoinmo.com', 'jesus@ecoinmo.com',
+  'maria@ecoinmo.com', 'paloma@ecoinmo.com',
+];
 
 const [fichero, asunto, ...dest] = process.argv.slice(2);
 

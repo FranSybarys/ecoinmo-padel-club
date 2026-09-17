@@ -6,7 +6,7 @@
 <title>Acceso · Campus Pádel Club</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#0b0b0c; --surface:#151417; --line:#2c2a2f;
@@ -28,14 +28,17 @@
   }
   h1 em{ font-style:normal; color:var(--fuchsia); }
   form{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  /* Inter en vez de Space Mono: la arroba del monoespaciado sale
+     apretada y cuesta distinguirla. Esta se dibuja abierta. */
   input{
-    width:min(78vw,300px);
+    width:min(78vw,330px);
     background:var(--surface); border:1px solid var(--line); color:var(--text);
-    font-family:'Space Mono',monospace; font-size:15px;
-    padding:14px 18px; border-radius:10px; text-align:center;
+    font-family:'Inter',system-ui,sans-serif;
+    font-size:17px; font-weight:500; letter-spacing:.01em;
+    padding:15px 18px; border-radius:10px; text-align:center;
   }
   input:focus{ outline:none; border-color:var(--fuchsia); }
-  input::placeholder{ color:var(--muted-2); }
+  input::placeholder{ color:var(--muted-2); font-weight:400; }
   button{
     background:var(--verde); border:none; color:#06120d;
     font-family:'Oswald',sans-serif; font-weight:700; font-size:15px;
@@ -59,13 +62,14 @@
 
 <form id="f" autocomplete="on">
   <input type="email" id="email" name="email" required
-         placeholder="tu@ecoinmo.com" aria-label="Correo electrónico"
+         placeholder="nombre@ecoinmo.com" aria-label="Correo electrónico"
          autocomplete="email" autocapitalize="off" spellcheck="false">
   <button type="submit" id="b">Enviar enlace</button>
 </form>
 
 <p class="msg" id="m" role="status"></p>
-<p class="pie">Te enviamos un enlace de acceso al correo. Caduca en 15 minutos.</p>
+<p class="pie">Te enviamos un enlace de acceso al correo. Caduca en 15 minutos.<br>
+Direcciones <strong>@ecoinmo.com</strong> y <strong>@hawkings.education</strong>.</p>
 
 <script>
 (function(){
