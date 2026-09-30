@@ -1141,13 +1141,31 @@
       pintarCancelaciones(d.cancelaciones);
 
       const s = d.ultima_sync;
-      tag.className = 'sync-tag' + (s && s.ok === false ? ' error' : '');
-      tag.textContent = s
-        ? (s.ok === false
-            ? `Última sincronización con error: ${s.error}`
-            : `Última sincronización: ${new Date(s.finished_at || s.started_at)
-                .toLocaleString('es-ES')} · ${s.upserted} reservas`)
-        : 'Sin sincronizaciones registradas todavía.';
+      const ok = d.ultima_sync_ok;
+      const fecha = (v)=> new Date(v).toLocaleString('es-ES');
+      // Una ejecución que muere por timeout no llega a marcar el error:
+      // se queda con ok = null y sin finished_at. Tratar eso como éxito
+      // pintaba la fecha de hoy y hacía invisible el fallo, así que se
+      // considera interrumpida si empezó hace más de 15 minutos.
+      const colgada = s && s.ok == null && !s.finished_at
+        && (Date.now() - new Date(s.started_at)) > 15*60*1000;
+
+      if(!s){
+        tag.className = 'sync-tag';
+        tag.textContent = 'Sin sincronizaciones registradas todavía.';
+      } else if(s.ok === false || colgada){
+        tag.className = 'sync-tag error';
+        const motivo = s.ok === false
+          ? `con error: ${s.error}`
+          : `interrumpida (${fecha(s.started_at)})`;
+        tag.textContent = ok
+          ? `Última sincronización ${motivo}. Datos a fecha de ${fecha(ok.finished_at)}.`
+          : `Última sincronización ${motivo}.`;
+      } else {
+        tag.className = 'sync-tag';
+        tag.textContent = `Última sincronización: ${fecha(s.finished_at || s.started_at)}`
+          + ` · ${s.upserted} reservas`;
+      }
     }catch(err){
       // Sin API se sigue pudiendo usar el registro manual del navegador.
       tag.className = 'sync-tag error';

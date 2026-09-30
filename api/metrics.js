@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   try {
     const sql = getSql();
 
-    const [meses, ocupacion, pistas, cobros, cancelaciones, ultimaSync] = await Promise.all([
+    const [meses, ocupacion, pistas, cobros, cancelaciones, ultimaSync, ultimaOk] = await Promise.all([
       // Objetivo + facturacion + ajuste manual, mes a mes.
       sql.query(`
         SELECT
@@ -61,6 +61,13 @@ export default async function handler(req, res) {
         SELECT started_at, finished_at, fetched, upserted, ok, error
         FROM sync_log ORDER BY id DESC LIMIT 1
       `),
+      // La ultima que de verdad termino bien. Si el ultimo intento se quedo
+      // a medias (la funcion muere por timeout sin poder marcar el error),
+      // esta es la fecha real de los datos que se estan mirando.
+      sql.query(`
+        SELECT finished_at, upserted
+        FROM sync_log WHERE ok = true ORDER BY id DESC LIMIT 1
+      `),
     ]);
 
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
@@ -71,6 +78,7 @@ export default async function handler(req, res) {
       cobros,
       cancelaciones,
       ultima_sync: ultimaSync[0] ?? null,
+      ultima_sync_ok: ultimaOk[0] ?? null,
     });
   } catch (err) {
     console.error('metrics falló:', err);
