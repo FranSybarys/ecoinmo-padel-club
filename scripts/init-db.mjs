@@ -6,13 +6,16 @@ import { neon } from '@neondatabase/serverless';
 
 const sql = neon(process.env.DATABASE_URL);
 
+// Objetivos del ejercicio. Revisados el 6 de octubre de 2026.
+// Si se vuelven a cambiar, este es el unico sitio donde tocarlos: el panel
+// los lee de /api/metrics, no los lleva escritos.
 const TARGETS = [
   ['2026-09-01', 13100],   ['2026-10-01', 14500],
-  ['2026-11-01', 13850],   ['2026-12-01', 5600],
-  ['2027-01-01', 19487],   ['2027-02-01', 14316],
-  ['2027-03-01', 13467],   ['2027-04-01', 15876],
-  ['2027-05-01', 18578],   ['2027-06-01', 15243],
-  ['2027-07-01', 12345],   ['2027-08-01', 7331.75],
+  ['2026-11-01', 13950],   ['2026-12-01', 6950],
+  ['2027-01-01', 19487],   ['2027-02-01', 14916],
+  ['2027-03-01', 13985],   ['2027-04-01', 16976],
+  ['2027-05-01', 20345],   ['2027-06-01', 15856],
+  ['2027-07-01', 13845],   ['2027-08-01', 8331],
 ];
 
 const schema = readFileSync(new URL('./schema.sql', import.meta.url), 'utf8');

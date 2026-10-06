@@ -6,7 +6,8 @@ export default async function handler(req, res) {
   try {
     const sql = getSql();
 
-    const [meses, ocupacion, pistas, cobros, cancelaciones, ultimaSync, ultimaOk] = await Promise.all([
+    const [meses, ocupacion, pistas, cobros, cancelaciones, ultimaSync, ultimaOk,
+           ventas, formasPago, monedero, tiendaPago] = await Promise.all([
       // Objetivo + facturacion + ajuste manual, mes a mes.
       sql.query(`
         SELECT
@@ -68,6 +69,23 @@ export default async function handler(req, res) {
         SELECT finished_at, upserted
         FROM sync_log WHERE ok = true ORDER BY id DESC LIMIT 1
       `),
+      // Ingresos por tipo de reserva. Suma exactamente lo mismo que la
+      // facturacion de la tabla principal, por eso sale de bookings.
+      sql.query(`
+        SELECT month::text AS month, booking_type, reservas,
+               euros::float8, horas::float8
+        FROM monthly_sales_mix ORDER BY month, euros DESC`),
+      // Formas de cobro. 'club' agrupa efectivo y TPV: Playtomic no los separa.
+      sql.query(`
+        SELECT month::text AS month, canal, metodo, pagos, euros::float8
+        FROM monthly_payment_methods ORDER BY month, euros DESC`),
+      sql.query(`
+        SELECT month::text AS month, recargado::float8, n_recargas,
+               consumido::float8, n_consumos
+        FROM monthly_wallet ORDER BY month`),
+      sql.query(`
+        SELECT month::text AS month, metodo, unidades, euros::float8, ventas
+        FROM monthly_extras_payment ORDER BY month, euros DESC`),
     ]);
 
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
@@ -79,6 +97,10 @@ export default async function handler(req, res) {
       cancelaciones,
       ultima_sync: ultimaSync[0] ?? null,
       ultima_sync_ok: ultimaOk[0] ?? null,
+      ventas,
+      formas_pago: formasPago,
+      monedero,
+      tienda_pago: tiendaPago,
     });
   } catch (err) {
     console.error('metrics falló:', err);

@@ -245,3 +245,71 @@ SELECT
 FROM payments
 WHERE status = 'PAID' AND item_name IS NOT NULL
 GROUP BY 1,2,3;
+
+-- ---------------------------------------------------------------
+-- Vistas de los paneles de direccion (octubre 2026)
+-- ---------------------------------------------------------------
+
+-- Ingresos por tipo de reserva. Sale de bookings, no de payments, para
+-- que el desglose sume exactamente lo mismo que monthly_revenue y la
+-- tabla principal del panel no se contradiga consigo misma.
+DROP VIEW IF EXISTS monthly_sales_mix;
+CREATE VIEW monthly_sales_mix AS
+SELECT
+  date_trunc('month', start_at AT TIME ZONE 'Europe/Madrid')::date AS month,
+  booking_type,
+  COUNT(*)::int                      AS reservas,
+  SUM(price_amount)                  AS euros,
+  ROUND(SUM(duration_min)/60.0, 1)   AS horas
+FROM bookings
+WHERE NOT is_canceled
+  AND payment_status IN ('PAID', 'PARTIAL_PAID', 'PENDING', 'UNPAID')
+GROUP BY 1, 2;
+
+-- Formas de pago. Playtomic marca como ONSITE todo lo cobrado en el club
+-- sin distinguir efectivo de TPV, asi que el canal se queda en "club": no
+-- hay dato para separar la caja y no se va a aparentar que lo hay.
+DROP VIEW IF EXISTS monthly_payment_methods;
+CREATE VIEW monthly_payment_methods AS
+SELECT
+  date_trunc('month', payment_date AT TIME ZONE 'Europe/Madrid')::date AS month,
+  CASE
+    WHEN metodo = 'ONSITE'          THEN 'club'
+    WHEN metodo = 'MERCHANT_WALLET' THEN 'monedero'
+    WHEN metodo IN ('APPLE_PAY', 'GOOGLE_PAY', 'CREDIT_CARD', 'QUICK_PAY') THEN 'online'
+    ELSE 'otros'
+  END         AS canal,
+  metodo,
+  COUNT(*)::int AS pagos,
+  SUM(total)    AS euros
+FROM payments
+WHERE status = 'PAID'
+GROUP BY 1, 2, 3;
+
+-- Monedero: recargas y consumo son cosas distintas y no deben sumarse a
+-- las ventas. La recarga es dinero a cuenta de reservas futuras; cuando
+-- se gasta ya viene contado en la reserva correspondiente.
+DROP VIEW IF EXISTS monthly_wallet;
+CREATE VIEW monthly_wallet AS
+SELECT
+  date_trunc('month', payment_date AT TIME ZONE 'Europe/Madrid')::date AS month,
+  SUM(total)   FILTER (WHERE product_sku = 'WALLET_RECHARGE')    AS recargado,
+  COUNT(*)     FILTER (WHERE product_sku = 'WALLET_RECHARGE')::int AS n_recargas,
+  SUM(total)   FILTER (WHERE metodo = 'MERCHANT_WALLET')         AS consumido,
+  COUNT(*)     FILTER (WHERE metodo = 'MERCHANT_WALLET')::int    AS n_consumos
+FROM payments
+WHERE status = 'PAID'
+GROUP BY 1;
+
+-- Tienda: como se pagan los articulos, para el panel de TIENDA.
+DROP VIEW IF EXISTS monthly_extras_payment;
+CREATE VIEW monthly_extras_payment AS
+SELECT
+  date_trunc('month', payment_date AT TIME ZONE 'Europe/Madrid')::date AS month,
+  metodo,
+  SUM(COALESCE(unidades, 1))::int AS unidades,
+  SUM(total)                      AS euros,
+  COUNT(*)::int                   AS ventas
+FROM payments
+WHERE status = 'PAID' AND item_name IS NOT NULL
+GROUP BY 1, 2;

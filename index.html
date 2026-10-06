@@ -253,12 +253,12 @@
   }
 
   /* ---------- Panel de detalle ---------- */
-  #detalle{
+  #detalle, #visor{
     position:fixed; inset:0; z-index:90;
     background:#0a0a0b;
     overflow-y:auto;
   }
-  #detalle[hidden]{ display:none; }
+  #detalle[hidden], #visor[hidden]{ display:none; }
   .det-wrap{ max-width:1100px; margin:0 auto; padding:0 clamp(16px,3vw,40px) 60px; }
 
   /* La cabecera acompaña el scroll: cerrar y cambiar de periodo son las
@@ -404,6 +404,58 @@
   .det-tabla tr:last-child td{ border-bottom:none; }
 
   .vacio{ color:var(--muted-2); font-size:13px; padding:20px 0; text-align:center; }
+
+  /* --- Paneles de direccion (octubre 2026) --- */
+  .pan-head{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:4px; }
+  .pan-head h2{ margin:0; }
+  .pan-head .sp{ flex:1; }
+  .sel-mes{
+    background:var(--surface-2); color:var(--text); border:1px solid var(--line);
+    border-radius:8px; padding:6px 10px; font:inherit; font-size:12.5px; cursor:pointer;
+  }
+  .link-btn{
+    background:none; border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:6px 12px; font:inherit; font-size:12.5px;
+    cursor:pointer; text-decoration:none; display:inline-block;
+  }
+  .link-btn:hover{ border-color:var(--fuchsia); color:var(--fuchsia); }
+
+  .minik{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:16px 0 20px; }
+  .minik > div{ background:var(--surface-2); border:1px solid var(--line); border-radius:11px; padding:13px 15px; }
+  .minik .l{ font-size:11.5px; color:var(--muted); display:block; margin-bottom:5px; }
+  .minik .v{ font-family:'Oswald',sans-serif; font-weight:600; font-size:21px; font-variant-numeric:tabular-nums; }
+  .minik .s{ font-size:11.5px; color:var(--muted-2); margin-top:3px; }
+  .minik .tot{ border-color:var(--fuchsia-dim); background:linear-gradient(160deg,var(--surface-2) 55%, #240418 150%); }
+
+  /* Aviso de un limite del dato, no de un error. */
+  .nota-limite{
+    border-left:3px solid var(--gold); background:var(--surface-2);
+    border-radius:0 10px 10px 0; padding:11px 15px; margin:16px 0 0 0;
+    font-size:12px; line-height:1.6; color:var(--muted);
+  }
+  .pill{
+    display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px;
+    border:1px solid var(--line); color:var(--muted); white-space:nowrap;
+  }
+  .pill.club{ border-color:var(--fuchsia-dim); color:var(--fuchsia); }
+  .pill.jug{ border-color:#2a5f4a; color:var(--court); }
+  .pill.canc{ border-color:var(--fuchsia-dim); color:var(--fuchsia); }
+
+  /* Las tablas anchas se desplazan dentro de su caja en vez de estirar
+     la pagina entera, que en movil dejaba todo descuadrado. */
+  .tsc{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .tsc > table{ min-width:520px; }
+
+  /* Barras de ventas por tipo. Los anchos van aqui y no en linea para
+     poder encogerlos en movil, donde las tres columnas fijas no caben. */
+  .vmix .lbl{ width:150px; }
+  .vmix .val{ width:100px; text-align:right; }
+  .vmix .val.sec{ width:92px; color:var(--muted-2); text-align:right; }
+  @media (max-width:560px){
+    .vmix .lbl{ width:92px; font-size:10px; }
+    .vmix .val{ width:76px; font-size:10px; }
+    .vmix .val.sec{ display:none; }
+  }
 
   .aviso-historico{
     background:var(--surface); border:1px solid var(--line);
@@ -565,6 +617,17 @@
     </div>
   </section>
 
+  <div class="panel" id="panel-ventas" hidden>
+    <div class="pan-head">
+      <h2>Ventas por tipo</h2>
+      <span class="sp"></span>
+      <select class="sel-mes" id="ventas-mes" aria-label="Mes"></select>
+      <button type="button" class="link-btn" id="btn-dia">Informe diario →</button>
+    </div>
+    <p class="sub">Reservas desglosadas por tipo más los extras de tienda, hasta el total de ventas.</p>
+    <div id="ventas-body"></div>
+  </div>
+
   <div class="board">
     <table>
       <thead>
@@ -641,8 +704,39 @@
     </p>
   </div>
 
+  <div class="panel" id="panel-pagos" hidden>
+    <h2>Cuadro de pagos</h2>
+    <p class="sub">Cómo entra el dinero cada mes, por vía de cobro.</p>
+    <div id="pagos-body"></div>
+    <p class="nota-limite">
+      <strong>Sobre la caja en efectivo.</strong> Playtomic marca como un único
+      concepto todo lo cobrado en el club y no distingue el efectivo del datáfono,
+      así que la columna <em>En club</em> contiene los dos. El importe de caja no
+      se puede obtener de esta fuente y no se muestra inventado.
+    </p>
+  </div>
+
+  <div class="panel" id="panel-tienda" hidden>
+    <div class="pan-head">
+      <h2>TIENDA · Extras vendidos</h2>
+      <span class="sp"></span>
+      <select class="sel-mes" id="tienda-mes" aria-label="Mes"></select>
+    </div>
+    <p class="sub">Artículos vendidos y cómo se pagaron.</p>
+    <div id="tienda-body"></div>
+    <p class="nota-limite">
+      <strong>Sobre el stock.</strong> La API de Playtomic sólo expone reservas y
+      cobros: de cada venta sabemos artículo, unidades e importe, pero nunca las
+      existencias. El stock se gestiona por ahora fuera de este panel.
+    </p>
+  </div>
+
   <div class="panel" id="panel-cancelaciones" hidden>
-    <h2>Cancelaciones</h2>
+    <div class="pan-head">
+      <h2>Cancelaciones</h2>
+      <span class="sp"></span>
+      <button type="button" class="link-btn" id="btn-canc">Ver detalle →</button>
+    </div>
     <p class="sub">Separadas por quién cancela: el jugador o el propio club.</p>
     <div id="canc-body"></div>
   </div>
@@ -675,6 +769,20 @@
   </div>
 </div>
 
+<div id="visor" hidden role="dialog" aria-modal="true" aria-labelledby="vis-title">
+  <div class="det-wrap">
+    <div class="det-bar">
+      <h2 class="det-title" id="vis-title">—</h2>
+      <button type="button" class="det-close" id="vis-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+             stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        Cerrar
+      </button>
+    </div>
+    <div id="vis-body"></div>
+  </div>
+</div>
+
   <span class="sync-tag" id="sync-tag"></span>
 
   <button class="reset-btn" id="reset-btn" type="button">Restablecer facturación registrada</button>
@@ -685,19 +793,21 @@
 
 <script>
 (function(){
+  // Respaldo por si /api/metrics no responde: el objetivo real lo manda
+  // la base de datos y se sobrescribe al cargar.
   const MONTHS = [
     {key:'sep26', name:'Septiembre', year:'2026', target:13100, iso:'2026-09-01'},
     {key:'oct26', name:'Octubre',    year:'2026', target:14500, iso:'2026-10-01'},
-    {key:'nov26', name:'Noviembre',  year:'2026', target:13850, iso:'2026-11-01'},
-    {key:'dic26', name:'Diciembre',  year:'2026', target:5600, iso:'2026-12-01'},
+    {key:'nov26', name:'Noviembre',  year:'2026', target:13950, iso:'2026-11-01'},
+    {key:'dic26', name:'Diciembre',  year:'2026', target:6950, iso:'2026-12-01'},
     {key:'ene27', name:'Enero',      year:'2027', target:19487, iso:'2027-01-01'},
-    {key:'feb27', name:'Febrero',    year:'2027', target:14316, iso:'2027-02-01'},
-    {key:'mar27', name:'Marzo',      year:'2027', target:13467, iso:'2027-03-01'},
-    {key:'abr27', name:'Abril',      year:'2027', target:15876, iso:'2027-04-01'},
-    {key:'may27', name:'Mayo',       year:'2027', target:18578, iso:'2027-05-01'},
-    {key:'jun27', name:'Junio',      year:'2027', target:15243, iso:'2027-06-01'},
-    {key:'jul27', name:'Julio',      year:'2027', target:12345, iso:'2027-07-01'},
-    {key:'ago27', name:'Agosto',     year:'2027', target:7331.75, iso:'2027-08-01'},
+    {key:'feb27', name:'Febrero',    year:'2027', target:14916, iso:'2027-02-01'},
+    {key:'mar27', name:'Marzo',      year:'2027', target:13985, iso:'2027-03-01'},
+    {key:'abr27', name:'Abril',      year:'2027', target:16976, iso:'2027-04-01'},
+    {key:'may27', name:'Mayo',       year:'2027', target:20345, iso:'2027-05-01'},
+    {key:'jun27', name:'Junio',      year:'2027', target:15856, iso:'2027-06-01'},
+    {key:'jul27', name:'Julio',      year:'2027', target:13845, iso:'2027-07-01'},
+    {key:'ago27', name:'Agosto',     year:'2027', target:8331, iso:'2027-08-01'},
   ];
   const STORAGE_KEY = 'pts_objetivos_2026_2027_v1';
   const ICON_CHART = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1.2"/><rect x="10" y="6" width="4" height="15" rx="1.2"/><rect x="17" y="9" width="4" height="12" rx="1.2"/></svg>';
@@ -774,7 +884,7 @@
             </button>
           </div>
         </td>
-        <td class="num">${fmt(m.target)}</td>
+        <td class="num" id="target-${m.key}">${fmt(m.target)}</td>
         <td class="num">
           <div class="real-cell">
             <input type="number" min="0" step="0.01" class="real-input" data-key="${m.key}"
@@ -1113,12 +1223,341 @@
     abrirDetalle();
   });
 
+  /* ---------------- Paneles de direccion ---------------- */
+
+  const TIPO_RES = {
+    REGULAR_BOOKING:   'Reservas puntuales',
+    RECURRING_BOOKING: 'Reservas fijas y abonados',
+    COURSE_CLASS:      'Clases de curso',
+    PRIVATE_CLASS:     'Clases particulares',
+    OPEN_MATCH:        'Partidas abiertas',
+  };
+  // Via por la que entra el dinero. Es otra cosa que CANAL_NOM, que mas
+  // abajo nombra el origen desde el que se hizo la reserva.
+  const CANAL_VIA = { club:'En club', online:'Cliente App/Web', monedero:'Monedero', otros:'Otros' };
+  const ESTADO_NOM = {
+    PAID:'Pagada', PARTIAL_PAID:'Parcial', PENDING:'Pendiente',
+    UNPAID:'Sin pagar', VOID:'Anulada', REFUNDED:'Devuelta',
+  };
+
+  const eur2   = (n) => (n==null?0:Number(n)).toLocaleString('es-ES',
+                        {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+  const mesNom = (iso) => `${MES_NOM[Number(iso.slice(5,7))]} ${iso.slice(0,4)}`;
+  const esc    = (t) => String(t ?? '').replace(/[&<>"]/g,
+                        c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  // Cache de lo que devuelve /api/metrics, para repintar al cambiar de mes
+  // sin volver a pedirlo.
+  let DATOS = null;
+
+  function mesesConDatos(filas){
+    return [...new Set(filas.map(f => f.month))].sort().reverse();
+  }
+
+  function llenarSelector(sel, meses, elegido){
+    sel.innerHTML = meses.map(m =>
+      `<option value="${m}"${m === elegido ? ' selected' : ''}>${mesNom(m)}</option>`).join('');
+  }
+
+  /* --- Panel 1: ventas por tipo --- */
+  function pintarVentas(mes){
+    const d = DATOS;
+    const filas  = d.ventas.filter(v => v.month === mes);
+    const tienda = d.tienda_pago.filter(v => v.month === mes);
+    const wal    = d.monedero.find(w => w.month === mes);
+    if(!filas.length && !tienda.length) return;
+
+    const resEur = filas.reduce((a,f) => a + (f.euros||0), 0);
+    const resNum = filas.reduce((a,f) => a + (f.reservas||0), 0);
+    const tieEur = tienda.reduce((a,f) => a + (f.euros||0), 0);
+    const tieUds = tienda.reduce((a,f) => a + (f.unidades||0), 0);
+    const total  = resEur + tieEur;
+    const tope   = Math.max(...filas.map(f => f.euros||0), tieEur, 1);
+
+    const barra = (nom, v, color, extra) => `
+      <div class="hbar vmix">
+        <span class="lbl" title="${esc(nom)}">${esc(nom)}</span>
+        <span class="trk"><span class="fil" style="width:${Math.max(v/tope*100,0)}%;background:${color}"></span></span>
+        <span class="val">${eur2(v)}</span>
+        <span class="val sec">${extra}</span>
+      </div>`;
+
+    document.getElementById('ventas-body').innerHTML = `
+      <div class="minik">
+        <div class="tot"><span class="l">Total de ventas</span>
+          <div class="v">${eur2(total)}</div>
+          <div class="s">reservas + tienda</div></div>
+        <div><span class="l">Reservas</span>
+          <div class="v">${eur2(resEur)}</div>
+          <div class="s">${resNum} reservas</div></div>
+        <div><span class="l">Tienda</span>
+          <div class="v">${eur2(tieEur)}</div>
+          <div class="s">${tieUds} unidades</div></div>
+      </div>
+      ${filas.map(f => barra(TIPO_RES[f.booking_type] || f.booking_type, f.euros,
+          'var(--court)', `${f.reservas} res.`)).join('')}
+      ${tieEur ? barra('Tienda (extras)', tieEur, 'var(--gold)', `${tieUds} uds.`) : ''}
+      <div class="card" style="margin:20px 0 0 0;background:var(--surface-2);">
+        <h3>Monedero</h3>
+        <p class="note">Pagos anticipados a cuenta de reservas futuras. No suman a las
+           ventas del mes: cuando se gastan ya vienen contados en la reserva.</p>
+        <div class="minik" style="margin:0;">
+          <div><span class="l">Recargado</span><div class="v">${eur2(wal?.recargado)}</div>
+            <div class="s">${wal?.n_recargas || 0} recargas</div></div>
+          <div><span class="l">Consumido</span><div class="v">${eur2(wal?.consumido)}</div>
+            <div class="s">${wal?.n_consumos || 0} pagos</div></div>
+        </div>
+      </div>`;
+    document.getElementById('panel-ventas').hidden = false;
+  }
+
+  /* --- Panel 2: cuadro de pagos --- */
+  function pintarPagos(){
+    const filas = DATOS.formas_pago;
+    if(!filas.length) return;
+    const meses  = mesesConDatos(filas);
+    const canales = ['club','online','monedero','otros'];
+
+    const cuerpo = meses.map(m => {
+      const f = filas.filter(x => x.month === m);
+      const por = c => f.filter(x => x.canal === c).reduce((a,x) => a + (x.euros||0), 0);
+      const tot = f.reduce((a,x) => a + (x.euros||0), 0);
+      return `<tr>
+        <td>${mesNom(m)}</td>
+        ${canales.map(c => `<td class="n">${por(c) ? eur2(por(c)) : '—'}</td>`).join('')}
+        <td class="n" style="color:var(--text);font-weight:600;">${eur2(tot)}</td>
+      </tr>`;
+    }).join('');
+
+    // Desglose del ultimo mes, para ver que hay dentro de cada via.
+    const ult = meses[0];
+    const det = filas.filter(x => x.month === ult).map(x =>
+      `<span class="pill">${METODO_NOM[x.metodo] || x.metodo}: ${eur2(x.euros)}</span>`).join(' ');
+
+    document.getElementById('pagos-body').innerHTML = `
+      <div class="tsc"><table class="det-tabla">
+        <thead><tr><th>Mes</th>
+          ${canales.map(c => `<th class="n" style="text-align:right;">${CANAL_VIA[c]}</th>`).join('')}
+          <th class="n" style="text-align:right;">Total</th></tr></thead>
+        <tbody>${cuerpo}</tbody>
+      </table></div>
+      <p style="margin:16px 0 0;font-size:12px;color:var(--muted);">
+        Detalle de ${mesNom(ult)}: ${det}</p>`;
+    document.getElementById('panel-pagos').hidden = false;
+  }
+
+  /* --- Panel 5: TIENDA --- */
+  function pintarTienda(mes){
+    const pagos = DATOS.tienda_pago.filter(v => v.month === mes);
+    if(!pagos.length){
+      document.getElementById('tienda-body').innerHTML =
+        '<p class="vacio">Sin ventas de tienda este mes.</p>';
+      document.getElementById('panel-tienda').hidden = false;
+      return;
+    }
+    const eurT = pagos.reduce((a,f) => a + (f.euros||0), 0);
+    const udsT = pagos.reduce((a,f) => a + (f.unidades||0), 0);
+    const venT = pagos.reduce((a,f) => a + (f.ventas||0), 0);
+
+    document.getElementById('tienda-body').innerHTML = `
+      <div class="minik">
+        <div class="tot"><span class="l">Facturado</span><div class="v">${eur2(eurT)}</div>
+          <div class="s">${venT} ventas</div></div>
+        <div><span class="l">Unidades</span><div class="v">${udsT}</div>
+          <div class="s">artículos servidos</div></div>
+        <div><span class="l">Ticket medio</span><div class="v">${eur2(venT ? eurT/venT : 0)}</div>
+          <div class="s">por venta</div></div>
+      </div>
+      <div class="tsc"><table class="det-tabla">
+        <thead><tr><th>Forma de pago</th><th class="n" style="text-align:right;">Ventas</th>
+          <th class="n" style="text-align:right;">Unidades</th>
+          <th class="n" style="text-align:right;">Importe</th>
+          <th class="n" style="text-align:right;">% del total</th></tr></thead>
+        <tbody>${pagos.map(f => `<tr>
+          <td>${METODO_NOM[f.metodo] || f.metodo}</td>
+          <td class="n">${f.ventas}</td>
+          <td class="n">${f.unidades}</td>
+          <td class="n">${eur2(f.euros)}</td>
+          <td class="n">${eurT ? (100*f.euros/eurT).toFixed(1) + '%' : '—'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+    document.getElementById('panel-tienda').hidden = false;
+  }
+
+  /* --- Visor: informe diario y detalle de cancelaciones --- */
+  const vis = {
+    el:    document.getElementById('visor'),
+    body:  document.getElementById('vis-body'),
+    titulo:document.getElementById('vis-title'),
+  };
+  function abrirVisor(titulo){
+    vis.titulo.innerHTML = titulo;
+    vis.body.innerHTML = '<div class="card"><p class="vacio">Cargando…</p></div>';
+    vis.el.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function cerrarVisor(){
+    vis.el.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  async function verDia(fecha){
+    abrirVisor('Informe diario');
+    try{
+      const r = await fetch('/api/dia?fecha=' + encodeURIComponent(fecha));
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      const s = d.resumen || {};
+      vis.titulo.innerHTML = `Informe diario <em>${d.fecha.split('-').reverse().join('/')}</em>`;
+
+      const filaRes = (b) => `<tr${b.is_canceled ? ' style="opacity:.55;"' : ''}>
+        <td style="font-family:'Space Mono',monospace;">${b.hora}–${b.hora_fin}</td>
+        <td>${esc(b.pista || '—')}</td>
+        <td>${TIPO_RES[b.tipo] || esc(b.tipo)}</td>
+        <td>${esc(b.titular || '—')}</td>
+        <td class="n">${eur2(b.importe)}</td>
+        <td>${b.is_canceled ? '<span class="pill canc">Cancelada</span>'
+                            : (ESTADO_NOM[b.estado_pago] || esc(b.estado_pago) || '—')}</td>
+        <td style="font-family:'Space Mono',monospace;font-size:10.5px;color:var(--muted-2);"
+            title="Id de reserva en Playtomic">${esc(b.booking_id).slice(0,8)}…</td>
+      </tr>`;
+
+      vis.body.innerHTML = `
+        <div class="card">
+          <div class="pan-head">
+            <h3>Resumen del día</h3><span class="sp"></span>
+            <input type="date" class="sel-mes" id="vis-fecha" value="${d.fecha}">
+          </div>
+          <div class="minik">
+            <div class="tot"><span class="l">Total del día</span><div class="v">${eur2(s.total)}</div>
+              <div class="s">reservas + tienda</div></div>
+            <div><span class="l">Reservas</span><div class="v">${s.reservas ?? 0}</div>
+              <div class="s">${eur2(s.importe)} · ${(s.horas ?? 0).toFixed(1)} h</div></div>
+            <div><span class="l">Tienda</span><div class="v">${eur2(s.tienda)}</div>
+              <div class="s">${d.ventas.length} ventas</div></div>
+            <div><span class="l">Canceladas</span><div class="v">${s.canceladas ?? 0}</div>
+              <div class="s">no suman</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Reservas</h3>
+          <p class="note">Cada fila lleva su identificador de Playtomic.</p>
+          ${d.reservas.length ? `<div class="tsc"><table class="det-tabla">
+            <thead><tr><th>Horario</th><th>Pista</th><th>Tipo</th><th>Titular</th>
+              <th class="n" style="text-align:right;">Importe</th><th>Estado</th><th>Id</th></tr></thead>
+            <tbody>${d.reservas.map(filaRes).join('')}</tbody></table></div>`
+            : '<p class="vacio">Sin reservas este día.</p>'}
+        </div>
+        <div class="card">
+          <h3>Ventas de tienda</h3>
+          ${d.ventas.length ? `<div class="tsc"><table class="det-tabla">
+            <thead><tr><th>Hora</th><th>Artículo</th><th class="n" style="text-align:right;">Uds.</th>
+              <th class="n" style="text-align:right;">Importe</th><th>Forma de pago</th></tr></thead>
+            <tbody>${d.ventas.map(v => `<tr>
+              <td style="font-family:'Space Mono',monospace;">${v.hora}</td>
+              <td>${esc(v.articulo)}</td>
+              <td class="n">${v.unidades ?? 1}</td>
+              <td class="n">${eur2(v.importe)}</td>
+              <td>${METODO_NOM[v.metodo] || esc(v.metodo)}</td></tr>`).join('')}</tbody></table></div>`
+            : '<p class="vacio">Sin ventas de tienda este día.</p>'}
+        </div>`;
+
+      document.getElementById('vis-fecha').addEventListener('change', (e) => {
+        if(e.target.value) verDia(e.target.value);
+      });
+    }catch(err){
+      vis.body.innerHTML = `<div class="card"><p class="vacio">No se pudo cargar: ${esc(err.message)}</p></div>`;
+    }
+  }
+
+  async function verCancelaciones(mes){
+    abrirVisor('Detalle de cancelaciones');
+    try{
+      const r = await fetch('/api/cancelaciones' + (mes ? '?mes=' + encodeURIComponent(mes) : ''));
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+
+      vis.body.innerHTML = `
+        <div class="card">
+          <h3>Quién cancela</h3>
+          <p class="note">Playtomic no registra qué empleado ejecuta la cancelación. Lo que
+             sí consta es si la reserva venía del club o del propio jugador, que es lo que
+             se muestra en la columna <em>Cancela</em>.</p>
+        </div>
+        ${d.reincidentes.length ? `<div class="card">
+          <h3>Clientes que repiten</h3>
+          <p class="note">Más de una cancelación en el periodo.</p>
+          <div class="tsc"><table class="det-tabla">
+            <thead><tr><th>Cliente</th><th class="n" style="text-align:right;">Cancelaciones</th>
+              <th class="n" style="text-align:right;">Importe</th></tr></thead>
+            <tbody>${d.reincidentes.map(c => `<tr>
+              <td>${esc(c.cliente)}</td>
+              <td class="n">${c.cancelaciones}</td>
+              <td class="n">${eur2(c.importe)}</td></tr>`).join('')}</tbody></table></div>
+        </div>` : ''}
+        <div class="card">
+          <h3>Últimas cancelaciones</h3>
+          ${d.filas.length ? `<div class="tsc"><table class="det-tabla">
+            <thead><tr><th>Cuándo</th><th>Pista</th><th>Tipo</th><th>Cliente</th>
+              <th>Cancela</th><th class="n" style="text-align:right;">Importe</th></tr></thead>
+            <tbody>${d.filas.map(f => `<tr>
+              <td style="font-family:'Space Mono',monospace;">${f.cuando}</td>
+              <td>${esc(f.pista || '—')}</td>
+              <td>${TIPO_RES[f.tipo] || esc(f.tipo)}</td>
+              <td>${esc(f.cliente || '—')}</td>
+              <td><span class="pill ${f.cancela === 'club' ? 'club' : 'jug'}">${
+                   f.cancela === 'club' ? 'Club' : 'Jugador'}</span></td>
+              <td class="n">${eur2(f.importe)}</td></tr>`).join('')}</tbody></table></div>`
+            : '<p class="vacio">Sin cancelaciones en el periodo.</p>'}
+        </div>`;
+    }catch(err){
+      vis.body.innerHTML = `<div class="card"><p class="vacio">No se pudo cargar: ${esc(err.message)}</p></div>`;
+    }
+  }
+
+  document.getElementById('vis-close').addEventListener('click', cerrarVisor);
+  vis.el.addEventListener('click', (e) => { if(e.target === vis.el) cerrarVisor(); });
+  document.getElementById('btn-dia').addEventListener('click', () => verDia(
+    new Date().toLocaleDateString('sv-SE', {timeZone:'Europe/Madrid'})));
+  document.getElementById('btn-canc').addEventListener('click', () => verCancelaciones(null));
+
+  function montarPaneles(d){
+    DATOS = d;
+    const mesesV = mesesConDatos(d.ventas);
+    const mesesT = mesesConDatos(d.tienda_pago);
+    if(mesesV.length){
+      const sel = document.getElementById('ventas-mes');
+      llenarSelector(sel, mesesV, mesesV[0]);
+      sel.onchange = () => pintarVentas(sel.value);
+      pintarVentas(mesesV[0]);
+    }
+    if(mesesT.length){
+      const sel = document.getElementById('tienda-mes');
+      llenarSelector(sel, mesesT, mesesT[0]);
+      sel.onchange = () => pintarTienda(sel.value);
+      pintarTienda(mesesT[0]);
+    }
+    pintarPagos();
+  }
+
   async function cargarDatos(){
     const tag = document.getElementById('sync-tag');
     try{
       const res = await fetch('/api/metrics');
       if(!res.ok) throw new Error('HTTP ' + res.status);
       const d = await res.json();
+
+      // El objetivo lo manda la base de datos, no el array MONTHS. Estaba
+      // escrito en dos sitios y al revisarse los objetivos la tabla seguia
+      // mostrando los viejos mientras el resto del panel ya iba al dia.
+      d.meses.forEach(m => {
+        const mes = MONTHS.find(x => x.iso === m.month);
+        if(mes && m.objetivo != null) mes.target = Number(m.objetivo);
+      });
+      MONTHS.forEach(m => {
+        const td = document.getElementById('target-' + m.key);
+        if(td) td.textContent = fmt(m.target);
+      });
 
       // Vuelca la facturacion de Playtomic en los inputs, salvo los meses
       // con ajuste manual, que mandan sobre lo calculado.
@@ -1139,6 +1578,7 @@
       pintarCobros(d.cobros);
       if(ultimoConDatos) pintarOcupacion(d.ocupacion, ultimoConDatos);
       pintarCancelaciones(d.cancelaciones);
+      montarPaneles(d);
 
       const s = d.ultima_sync;
       const ok = d.ultima_sync_ok;
@@ -1480,7 +1920,7 @@
         </div>
 
         <div class="card">
-          <h3>Extras vendidos</h3>
+          <h3>TIENDA · Extras vendidos</h3>
           <p class="note">Productos que el cliente añade a la reserva o compra en el club.</p>
           ${(()=>{
             const e = d.extras || [];
