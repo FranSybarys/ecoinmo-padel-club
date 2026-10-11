@@ -1,6 +1,6 @@
 // Cron mensual: genera el informe del mes cerrado y lo envia a los socios.
 // Se dispara el dia 2 de cada mes, cuando el mes anterior ya esta completo.
-import { datosMes, generarHTML } from '../lib/informe.mjs';
+import { datosMes, generarHTML, generarTexto } from '../lib/informe.mjs';
 
 const DESTINATARIOS = [
   'fran@ecoinmo.com', 'jesus@ecoinmo.com',
@@ -48,6 +48,7 @@ export default async function handler(req, res) {
     }
 
     const html = generarHTML(datos, from);
+    const texto = generarTexto(datos, from);
     const asunto = `Informe de ${MES[f.getUTCMonth()+1]} ${f.getUTCFullYear()} · Campus Pádel Club`;
 
     const dest = req.query?.solo ? [req.query.solo] : DESTINATARIOS;
@@ -55,7 +56,10 @@ export default async function handler(req, res) {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: FROM, to: dest, reply_to: REPLY_TO, subject: asunto, html }),
+      // Se mandan las dos versiones: un correo solo-HTML puntua peor en
+      // los filtros de spam que uno con su alternativa en texto.
+      body: JSON.stringify({ from: FROM, to: dest, reply_to: REPLY_TO,
+                             subject: asunto, html, text: texto }),
     });
     const body = await r.json();
     if (!r.ok) throw new Error(body.message || JSON.stringify(body));

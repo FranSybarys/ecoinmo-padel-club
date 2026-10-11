@@ -45,6 +45,15 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         from: FROM, to: [email],
         subject: 'Tu acceso a Campus Pádel Club',
+        // Alternativa en texto. Ademas de puntuar mejor en los filtros,
+        // un correo con un unico boton y nada de texto es justo la forma
+        // que los clasificadores asocian al phishing.
+        text: `Tu enlace de acceso a Campus Pádel Club\n\n`
+            + `Abre esta dirección para entrar al panel. No hace falta contraseña:\n\n`
+            + `${enlace}\n\n`
+            + `El enlace caduca en ${minutosToken} minutos y solo sirve una vez.\n`
+            + `Si no lo has pedido tú, ignora este correo: sin abrirlo no se\n`
+            + `concede ningún acceso.`,
         html: `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a;line-height:1.6;">
 <div style="border-bottom:3px solid #e6007e;padding-bottom:14px;margin-bottom:24px;">
   <div style="font-size:11px;color:#888;letter-spacing:1.5px;text-transform:uppercase;">Campus Pádel Club</div>

@@ -36,10 +36,19 @@ if (!key) {
 const to = dest.length ? dest : SOCIOS;
 const html = readFileSync(fichero, 'utf8');
 
+// Alternativa en texto a partir del propio HTML. Basta con que exista:
+// un correo sin parte de texto puntua peor en los filtros de spam.
+const texto = html
+  .replace(/<(script|style)[\s\S]*?<\/\1>/gi, '')
+  .replace(/<\/(p|div|tr|h[1-6]|li)>/gi, '\n')
+  .replace(/<[^>]+>/g, ' ')
+  .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+  .replace(/[ \t]+/g, ' ').replace(/\n\s*\n\s*\n+/g, '\n\n').trim();
+
 const res = await fetch('https://api.resend.com/emails', {
   method: 'POST',
   headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-  body: JSON.stringify({ from: FROM, to, reply_to: REPLY_TO, subject: asunto, html }),
+  body: JSON.stringify({ from: FROM, to, reply_to: REPLY_TO, subject: asunto, html, text: texto }),
 });
 
 const body = await res.json();
